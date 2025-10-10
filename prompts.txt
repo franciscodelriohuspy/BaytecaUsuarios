@@ -1,0 +1,210 @@
+Quiero crear un area de usuario en App Script.
+
+
+ /* =========================
+     🎨 TOKENS BAYTECA Estos son mis colores
+     ========================= */
+  :root{
+    --deep-pond: #003820;
+    --spring-bud: #A4FF00;
+    --rose-fog: #F4C6C8;
+    --grape-gatsby: #C6A2F8;
+    --isabelleine: #ECEFF1;
+    --onyx-black: #353838;
+    --bg: #FAFAFA;
+    --surface: #FFFFFF;
+    --shadow: 0 8px 24px rgba(0,0,0,.08);
+    --radius: 14px;
+    --radius-sm: 10px;
+    --gap: 20px;
+    --font-headings: "Teodor","Gelasio",Georgia,serif;
+    --font-body: "Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    --h1: clamp(28px, 3vw, 36px);
+    --h2: clamp(20px, 2.2vw, 24px);
+    --text: 16px;
+    --small: 14px;
+  }
+
+  Este es mi logo https://lh3.googleusercontent.com/d/1Oz_10tdZud0VlxaCC2QPZgw7qWhhDSa9
+
+  Te describo la esctrucuta de lo que necesito.
+
+  ##login.html  primera página de acceso o login, donde daremos al cliente la posibilidad de loguearse con su cuenta google o a través de un usuario y contraseña. 
+  Lógicamente deberemos darle la posibilidad de crear un usuario y contraseña si lo desean. Es Usuario siempre será un correo electrónico, que será lo que usarmeos para hacer el Martch con los datos, para poder mostrárselos.
+
+  Esta será la página de Usuarios 1kNiGw6zVxsvtWi1YHWo3zC7qN12t-bwJnao45_ubhKE
+  Una vez entren, ya estarán logueados, y podrán moverse entre las diferentes páginas sin necesidad de reconfirmar el logueo. esta página será login.html
+
+  Una vez el cliente se loguea, accederá a una página principal o dashboard. 
+
+  ##index.html  Tendremos un menú en una barra lateral a la izquierda semioculto, donde se pueda acceder. No me importa que no este a la vista constantemente, por que el usuario podrá acceder a las diferentes páginas a traves de ese dashboard.
+  Tendrá 3 bloques diferenciados, donde cada uno irá con una imagen bonita, para empezar puedes usar los colores de la paleta.
+  El main de los diferentes bloques será de este estilo;
+  <!-- ░░ MAIN ░░ -->
+    <main class="main">
+      <h1 class="section-title">Accesos rápidos</h1>
+      <section class="cards">
+        <article class="card" data-target="estado">
+          <div class="card__banner" style="background:linear-gradient(120deg,#d9f2e7,#F2FFF0);"></div>
+          <div class="card__body">
+            <h2 class="card__title">Estado de la solicitud</h2>
+            <p class="card__desc">Consulta y gestiona el progreso de cada caso en tiempo real.</p>
+            <button class="btn">Entrar</button>
+          </div>
+        </article>
+
+        <article class="card" data-target="datos">
+          <div class="card__banner" style="background:linear-gradient(120deg,#efe7ff,#ffffff);"></div>
+          <div class="card__body">
+            <h2 class="card__title">Datos y Documentación</h2>
+            <p class="card__desc">Recopila y valida la información necesaria de tu cliente.</p>
+            <button class="btn">Entrar</button>
+          </div>
+        </article>
+
+        <article class="card" data-target="tasacion">
+          <div class="card__banner" style="background:linear-gradient(120deg,#eaf1ff,#ffffff);"></div>
+          <div class="card__body">
+            <h2 class="card__title">Tasación y Seguros</h2>
+            <p class="card__desc">Solicita tasaciones y compara coberturas de seguros.</p>
+            <button class="btn">Entrar</button>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+Pero puedes variar lo que consideres necesario.
+
+##estado.html
+Estará ligado al estado de la operación que tendremos en la siguiente hoja 1rwCBi1BRyz6wd7528jZv_X1hXY-PyLSm4rWiUA0Nhbo Teniendo como referencia la casilla L que es la que va a marcar el estado de cada expediente. 
+Tendremos que hacer Match entre el correo electónico del usuario que usa en su login ( ya sea de google o no) con la base de datos de la columna J, que es la que contiene el email de los clientes, con el que haremos match
+
+Tengo pensado una barra de evolucion estilo Salesforce donde "se ilumine" en verde el estado en el que esté la operación, y debajo de la barra tengamos un explicativo de los pasos que estamos dando o que hay que dar en ese paso.
+
+Te doy una referencia para que puedas basarte en ello 
+
+/* Barra de progreso */
+  .progress-bar {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2rem;
+    position: relative;
+  }
+  .progress-bar::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: #e5e7eb;
+    transform: translateY(-50%);
+    border-radius: 3px;
+  }
+  .step {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 20%;
+  }
+  .circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    border: 2px solid #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #111827;
+    font-weight: 600;
+  }
+  .step.active .circle {
+    background: #10b981;
+    border-color: #059669;
+    color: white;
+  }
+  .step-label {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    text-align: center;
+  }
+  .progress-fill {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    height: 6px;
+    background: #10b981;
+    transform: translateY(-50%);
+    border-radius: 3px;
+    z-index: 0;
+    transition: width 0.5s ease-in-out;
+  }
+
+  /* Botón volver */
+  .btn {
+    display: inline-block;
+    background: #003820;
+    color: #fff;
+    padding: 12px 22px;
+border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    margin-top: 2rem;
+  }
+  .btn:hover { filter: brightness(1.05); }
+</style>
+</head>
+
+<body>
+<div class="container" id="estadoContainer">
+  <h2>Estado de la Solicitud</h2>
+  <div id="infoBasica" class="header">Cargando información...</div>
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill"></div>
+    <div class="step" data-etapa="DOCUMENTACIÓN"><div class="circle">1</div><div class="step-label">Documentación</div></div>
+    <div class="step" data-etapa="ESTUDIO BANCARIO"><div class="circle">2</div><div class="step-label">Estudio Bancario</div></div>
+    <div class="step" data-etapa="OFERTA RECIBIDA"><div class="circle">3</div><div class="step-label">Oferta Recibida</div></div>
+    <div class="step" data-etapa="TASACIÓN"><div class="circle">4</div><div class="step-label">Tasación</div></div>
+    <div class="step" data-etapa="FEIN/NOTARÍA"><div class="circle">5</div><div class="step-label">FEIN/Notaría</div></div>
+  </div>
+
+  <div style="text-align:center;">
+    <button class="btn" id="backToDashboard">← Volver al Panel</button>
+  </div>
+</div>
+
+##datos.html
+Aquí irán los datos del cliente. Mostraremos los siguientes datos de 1rwCBi1BRyz6wd7528jZv_X1hXY-PyLSm4rWiUA0Nhbo
+ID de la Operación Columna A de esa hoja
+Nombre del cliente Columna B de esa hoja
+Gestor asignado columna C de esa hoja
+Días en el Mismo Estado Columna E de esa hoja
+DNI Columna F de esa hoja
+Precio de la Viivienda COlumna G de esa hoja
+Importe de hipoteca Columna H de esa hoja
+
+Todos estos datos estarán visibles siempre y cuando el status de la operación sea OPEN Columna I de esa hoja. 
+
+Además deberemos mostrarle un link a Airtable personalizado que es el que deben usar para subir documentación. El apartado de la documentación estará bien diferenciado de los tatos personales. Ese link está en la columna K de esa hoja
+
+seguros.html
+
+Aquí tendremos espacio para poder contratar tasación o seguros.
+
+Para la parte de Seguros Tendremos 3 links a diferentes formularios
+Seguro de Vida  https://huspy.typeform.com/to/sKStpQM6
+Seguro de Hogar https://huspy.typeform.com/to/RXB2stWf
+Seguro de Salud https://huspy.typeform.com/to/RXB2stWf
+Alarma Despertador  https://huspy.typeform.com/to/kGQfaxnG   Este estará debajo del resto, y tendrá una nota diciendo "Tienes seguros que ahora mismo no puedes cambiar? Dinos cuando vencen y nosotros de pasaremos "precio un mes antes, para que valores."
+Recomendador https://huspy.typeform.com/to/OneCu9av  Quieres recomendarnos a alguien. Gracias por confiar en nosotros.
+
+Para la parte de Tasaciones  Tendremos un Link de Tinsa  https://store.tinsa.es/orders/appraisal/location?partnerId=BAYT&referralOrigin=web-generalista 
+
+
