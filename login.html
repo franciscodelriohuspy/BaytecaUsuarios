@@ -1,0 +1,30 @@
+<section class="login-page">
+  <div class="login-card">
+    <div class="login-card__logo">
+      <img src="https://lh3.googleusercontent.com/d/1Oz_10tdZud0VlxaCC2QPZgw7qWhhDSa9" alt="Bayteca" />
+    </div>
+    <h1>Tu área privada Bayteca</h1>
+    <p>Accede para seguir el estado de tu operación, subir documentación y contratar servicios en un solo lugar.</p>
+
+    <button class="btn btn--google" type="button" id="googleSignIn">
+      <span>Continuar con Google</span>
+    </button>
+
+    <div class="divider">o accede con tu correo</div>
+
+    <form id="loginForm" autocomplete="on">
+      <div class="form-field">
+        <label for="loginEmail">Correo electrónico</label>
+        <input id="loginEmail" type="email" name="email" placeholder="tu@email.com" required />
+      </div>
+      <div class="form-field">
+        <label for="loginPassword">Contraseña</label>
+        <input id="loginPassword" type="password" name="password" placeholder="Introduce tu contraseña" required />
+      </div>
+      <button class="btn" type="submit">Entrar en mi cuenta</button>
+    </form>
+
+    <p class="login__hint">¿Es tu primera vez? Crea tu contraseña al iniciar sesión y te ayudaremos a activarla.</p>
+    <div class="login__message" id="loginMessage" role="alert"></div>
+  </div>
+</section>
