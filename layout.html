@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="bayteca">
+  <head>
+    <meta charset="utf-8" />
+    <title>Área de Clientes Bayteca</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Gelasio:wght@500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --deep-pond: #003820;
+        --spring-bud: #a4ff00;
+        --rose-fog: #f4c6c8;
+        --grape-gatsby: #c6a2f8;
+        --isabelleine: #eceff1;
+        --onyx-black: #353838;
+        --bg: #fafafa;
+        --surface: #ffffff;
+        --shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        --radius: 14px;
+        --radius-sm: 10px;
+        --gap: 20px;
+        --font-headings: 'Gelasio', 'Teodor', Georgia, serif;
+        --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+        --h1: clamp(28px, 3vw, 36px);
+        --h2: clamp(20px, 2.2vw, 24px);
+        --text: 16px;
+        --small: 14px;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: var(--font-body);
+        background: var(--bg);
+        color: var(--onyx-black);
+      }
+
+      img {
+        max-width: 100%;
+        display: block;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      button {
+        font-family: inherit;
+      }
+
+      .login-page {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        background: radial-gradient(circle at top left, rgba(196, 255, 196, 0.3), transparent 60%),
+          radial-gradient(circle at bottom right, rgba(198, 162, 248, 0.25), transparent 55%), var(--bg);
+      }
+
+      .login-card {
+        width: min(480px, 100%);
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: clamp(28px, 5vw, 42px);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .login-card__logo {
+        width: 140px;
+        border-radius: var(--radius-sm);
+        box-shadow: 0 8px 20px rgba(0, 56, 32, 0.18);
+        overflow: hidden;
+      }
+
+      .login-card h1 {
+        font-family: var(--font-headings);
+        font-size: var(--h1);
+        margin: 0;
+      }
+
+      .login-card p {
+        margin: 0;
+        font-size: var(--text);
+      }
+
+      .divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        color: rgba(53, 56, 56, 0.7);
+      }
+
+      .divider::before,
+      .divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: rgba(53, 56, 56, 0.12);
+      }
+
+      .form-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .form-field label {
+        font-weight: 600;
+        font-size: 15px;
+      }
+
+      .form-field input {
+        border: 1px solid rgba(53, 56, 56, 0.2);
+        border-radius: var(--radius-sm);
+        padding: 12px 14px;
+        font-size: 16px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .form-field input:focus {
+        outline: none;
+        border-color: var(--deep-pond);
+        box-shadow: 0 0 0 4px rgba(0, 56, 32, 0.12);
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        border: none;
+        background: var(--deep-pond);
+        color: #fff;
+        padding: 12px 22px;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+      }
+
+      .btn:hover {
+        filter: brightness(1.05);
+        box-shadow: 0 12px 24px rgba(0, 56, 32, 0.15);
+        transform: translateY(-1px);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .btn--secondary {
+        background: rgba(0, 56, 32, 0.08);
+        color: var(--deep-pond);
+      }
+
+      .btn--google {
+        background: #fff;
+        color: #1f1f1f;
+        border: 1px solid rgba(53, 56, 56, 0.16);
+      }
+
+      .btn--google:hover {
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        filter: none;
+      }
+
+      .login__message {
+        min-height: 20px;
+        font-size: 14px;
+        color: rgba(53, 56, 56, 0.8);
+      }
+
+      .login__message.is-error {
+        color: #c62828;
+      }
+
+      .login__message.is-success {
+        color: #2e7d32;
+      }
+
+      .login__message.is-loading {
+        color: rgba(53, 56, 56, 0.7);
+      }
+
+      .app {
+        min-height: 100vh;
+        display: flex;
+        background: var(--bg);
+      }
+
+      .sidebar {
+        width: min(280px, 90vw);
+        background: linear-gradient(180deg, rgba(0, 56, 32, 0.98), rgba(0, 56, 32, 0.85));
+        color: #f4fff8;
+        padding: clamp(24px, 4vw, 32px);
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+        position: relative;
+      }
+
+      .sidebar__logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .sidebar__logo img {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+        object-fit: cover;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .sidebar__logo span {
+        font-family: var(--font-headings);
+        font-size: 22px;
+        letter-spacing: 0.5px;
+      }
+
+      .sidebar__menu {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: var(--radius-sm);
+        color: inherit;
+        background: rgba(255, 255, 255, 0.02);
+        transition: background 0.2s ease, transform 0.2s ease;
+        cursor: pointer;
+      }
+
+      .nav-link:hover,
+      .nav-link.is-active {
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateX(4px);
+      }
+
+      .sidebar__footer {
+        margin-top: auto;
+        font-size: 14px;
+        color: rgba(244, 255, 248, 0.8);
+      }
+
+      .app__main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .topbar {
+        padding: clamp(20px, 4vw, 28px);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .topbar__user {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .topbar__user span {
+        font-weight: 600;
+      }
+
+      .app__content {
+        flex: 1;
+        padding: clamp(20px, 4vw, 40px);
+        display: flex;
+        flex-direction: column;
+        gap: clamp(24px, 4vw, 32px);
+      }
+
+      .panel {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: clamp(24px, 4vw, 32px);
+      }
+
+      .dashboard__header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .dashboard__header h1 {
+        font-family: var(--font-headings);
+        font-size: var(--h1);
+        margin: 0;
+      }
+
+      .summary-card {
+        min-width: 240px;
+        background: linear-gradient(120deg, rgba(0, 56, 32, 0.05), rgba(164, 255, 0, 0.25));
+        border-radius: var(--radius);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .summary-card strong {
+        font-size: 28px;
+        font-family: var(--font-headings);
+      }
+
+      .main {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+
+      .section-title {
+        margin: 0;
+        font-family: var(--font-headings);
+        font-size: var(--h2);
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: clamp(18px, 3vw, 28px);
+      }
+
+      .card {
+        border-radius: var(--radius);
+        background: var(--surface);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 280px;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 18px 32px rgba(0, 0, 0, 0.1);
+      }
+
+      .card__banner {
+        height: 120px;
+      }
+
+      .card__body {
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        flex: 1;
+      }
+
+      .card__title {
+        font-family: var(--font-headings);
+        margin: 0;
+        font-size: 22px;
+      }
+
+      .card__desc {
+        margin: 0;
+        color: rgba(53, 56, 56, 0.75);
+      }
+
+      .progress-bar {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 2rem;
+        position: relative;
+      }
+
+      .progress-bar::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: #e5e7eb;
+        transform: translateY(-50%);
+        border-radius: 3px;
+      }
+
+      .progress-fill {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        height: 6px;
+        background: #10b981;
+        transform: translateY(-50%);
+        border-radius: 3px;
+        z-index: 0;
+        transition: width 0.5s ease-in-out;
+        width: 0;
+      }
+
+      .step {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 20%;
+        text-align: center;
+      }
+
+      .circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #e5e7eb;
+        border: 2px solid #d1d5db;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: #111827;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      .step.active .circle {
+        background: #10b981;
+        border-color: #059669;
+        color: #fff;
+      }
+
+      .step-label {
+        margin-top: 6px;
+        font-size: 0.85rem;
+      }
+
+      .estado__descripcion {
+        margin-top: 24px;
+        background: rgba(0, 56, 32, 0.06);
+        padding: 18px;
+        border-radius: var(--radius-sm);
+        line-height: 1.6;
+      }
+
+      .estado__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 16px;
+        color: rgba(53, 56, 56, 0.8);
+      }
+
+      .meta-item {
+        background: rgba(53, 56, 56, 0.08);
+        border-radius: var(--radius-sm);
+        padding: 12px 16px;
+        font-size: 14px;
+      }
+
+      .datos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 18px;
+      }
+
+      .datos-item {
+        background: rgba(0, 56, 32, 0.06);
+        border-radius: var(--radius-sm);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .datos-item span {
+        display: block;
+      }
+
+      .datos-item .label {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: rgba(53, 56, 56, 0.6);
+      }
+
+      .datos-item .value {
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .airtable-card {
+        margin-top: 24px;
+        padding: 20px;
+        border-radius: var(--radius);
+        background: linear-gradient(135deg, rgba(164, 255, 0, 0.25), rgba(0, 56, 32, 0.08));
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .seguros-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+      }
+
+      .seguro-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .seguro-card p {
+        margin: 0;
+        color: rgba(53, 56, 56, 0.75);
+      }
+
+      .seguro-card .btn {
+        align-self: flex-start;
+      }
+
+      .tasacion-card {
+        margin-top: 28px;
+        padding: 24px;
+        border-radius: var(--radius);
+        background: linear-gradient(120deg, rgba(198, 162, 248, 0.25), rgba(244, 198, 200, 0.2));
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .empty-state {
+        padding: 18px;
+        border-radius: var(--radius-sm);
+        background: rgba(53, 56, 56, 0.06);
+        color: rgba(53, 56, 56, 0.7);
+      }
+
+      .is-loading::after {
+        content: 'Cargando...';
+        display: block;
+        margin-top: 16px;
+        color: rgba(53, 56, 56, 0.7);
+        font-size: 14px;
+      }
+
+      @media (max-width: 960px) {
+        .app {
+          flex-direction: column;
+        }
+        .sidebar {
+          width: auto;
+          flex-direction: row;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .sidebar__menu {
+          flex-direction: row;
+          flex-wrap: wrap;
+        }
+        .topbar {
+          padding-top: 0;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .cards {
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+        .sidebar {
+          gap: 18px;
+        }
+        .sidebar__menu {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body class="page-<?= page ?>" data-page="<?= page ?>" data-token="<?= token ?>">
+    <? if (page === 'login') { ?>
+      <?!= include('login'); ?>
+    <? } else { ?>
+      <div class="app">
+        <aside class="sidebar">
+          <div class="sidebar__logo">
+            <img src="https://lh3.googleusercontent.com/d/1Oz_10tdZud0VlxaCC2QPZgw7qWhhDSa9" alt="Bayteca" />
+            <span>Bayteca</span>
+          </div>
+          <nav class="sidebar__menu">
+            <a class="nav-link<? if (page === 'index') { ?> is-active<? } ?>" data-nav="index">Panel principal</a>
+            <a class="nav-link<? if (page === 'estado') { ?> is-active<? } ?>" data-nav="estado">Estado de la solicitud</a>
+            <a class="nav-link<? if (page === 'datos') { ?> is-active<? } ?>" data-nav="datos">Datos y documentación</a>
+            <a class="nav-link<? if (page === 'seguros') { ?> is-active<? } ?>" data-nav="seguros">Tasación y seguros</a>
+          </nav>
+          <div class="sidebar__footer">
+            <div>Sesión iniciada como</div>
+            <strong data-user-email><?= session && session.email ? session.email : '–' ?></strong>
+          </div>
+        </aside>
+        <div class="app__main">
+          <header class="topbar">
+            <div class="topbar__user">
+              <span data-user-name><?= session && session.nombre ? session.nombre : 'Cliente Bayteca' ?></span>
+              <small>Bienvenido a tu espacio privado</small>
+            </div>
+            <button class="btn btn--secondary" id="logoutBtn">Cerrar sesión</button>
+          </header>
+          <div class="app__content">
+            <? if (page === 'index') { ?>
+              <?!= include('index'); ?>
+            <? } else if (page === 'estado') { ?>
+              <?!= include('estado'); ?>
+            <? } else if (page === 'datos') { ?>
+              <?!= include('datos'); ?>
+            <? } else if (page === 'seguros') { ?>
+              <?!= include('seguros'); ?>
+            <? } else { ?>
+              <?!= include('index'); ?>
+            <? } ?>
+          </div>
+        </div>
+      </div>
+    <? } ?>
+    <?!= include('scripts'); ?>
+  </body>
+</html>

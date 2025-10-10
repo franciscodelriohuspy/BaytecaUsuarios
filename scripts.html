@@ -1,0 +1,398 @@
+<script>
+  (function () {
+    const state = {
+      session: null,
+      page: document.body.dataset.page,
+      token: document.body.dataset.token || ''
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+      if (state.page === 'login') {
+        initLogin();
+      } else {
+        initApp();
+      }
+    });
+
+    function initLogin() {
+      const form = document.getElementById('loginForm');
+      const messageEl = document.getElementById('loginMessage');
+      const googleButton = document.getElementById('googleSignIn');
+
+      if (googleButton) {
+        googleButton.addEventListener('click', function () {
+          showLoginMessage('Pronto podrás autenticarte con Google. Mientras tanto accede con tu correo y contraseña.', 'loading');
+        });
+      }
+
+      if (!form) {
+        return;
+      }
+
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        const email = form.email.value;
+        const password = form.password.value;
+        showLoginMessage('Validando tus datos...', 'loading');
+
+        google.script.run
+          .withSuccessHandler(function (response) {
+            if (response && response.success) {
+              if (!response.token) {
+                showLoginMessage('No se pudo establecer la sesión. Inténtalo de nuevo.', 'error');
+                return;
+              }
+              state.token = response.token;
+              showLoginMessage('¡Bienvenido! Estamos preparando tu panel…', 'success');
+              setTimeout(function () {
+                navigateTo('index', state.token);
+              }, 500);
+            } else {
+              showLoginMessage((response && response.message) || 'No ha sido posible iniciar sesión.', 'error');
+            }
+          })
+          .withFailureHandler(function (error) {
+            showLoginMessage((error && error.message) || 'No ha sido posible iniciar sesión.', 'error');
+          })
+          .login(email, password);
+      });
+
+      function showLoginMessage(text, type) {
+        if (!messageEl) return;
+        messageEl.textContent = text;
+        messageEl.className = 'login__message';
+        if (type === 'error') {
+          messageEl.classList.add('is-error');
+        }
+        if (type === 'success') {
+          messageEl.classList.add('is-success');
+        }
+        if (type === 'loading') {
+          messageEl.classList.add('is-loading');
+        }
+      }
+    }
+
+    function initApp() {
+      attachNavigation();
+      attachLogout();
+
+      google.script.run
+        .withSuccessHandler(function (session) {
+          if (!session || !session.email) {
+            state.token = '';
+            navigateTo('login', '');
+            return;
+          }
+          state.token = document.body.dataset.token || state.token;
+          state.session = session;
+          updateSessionUI(session);
+          loadPageData();
+        })
+        .withFailureHandler(function () {
+          state.token = '';
+          navigateTo('login', '');
+        })
+        .getSession(state.token);
+    }
+
+    function attachNavigation() {
+      const links = document.querySelectorAll('.nav-link, .card');
+      links.forEach(function (link) {
+        const target = link.dataset.target || link.dataset.nav;
+        if (!target) return;
+        link.addEventListener('click', function (event) {
+          event.preventDefault();
+          navigateTo(target);
+        });
+      });
+
+      const backButton = document.getElementById('backToDashboard');
+      if (backButton) {
+        backButton.addEventListener('click', function () {
+          navigateTo('index');
+        });
+      }
+
+      const datosVolver = document.getElementById('datosVolver');
+      if (datosVolver) {
+        datosVolver.addEventListener('click', function () {
+          navigateTo('index');
+        });
+      }
+    }
+
+    function attachLogout() {
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (!logoutBtn) return;
+      logoutBtn.addEventListener('click', function () {
+        const currentToken = state.token;
+        state.token = '';
+        google.script.run
+          .withSuccessHandler(function () {
+            navigateTo('login');
+          })
+          .withFailureHandler(function () {
+            navigateTo('login');
+          })
+          .logout(currentToken);
+      });
+    }
+
+    function updateSessionUI(session) {
+      const nameEls = document.querySelectorAll('[data-user-name]');
+      const emailEls = document.querySelectorAll('[data-user-email]');
+      nameEls.forEach(function (el) {
+        el.textContent = session.nombre || 'Cliente Bayteca';
+      });
+      emailEls.forEach(function (el) {
+        el.textContent = session.email || '—';
+      });
+
+      const greetingName = document.getElementById('greetingName');
+      if (greetingName) {
+        greetingName.textContent = session.nombre || 'cliente Bayteca';
+      }
+    }
+
+    function loadPageData() {
+      switch (state.page) {
+        case 'index':
+          loadDashboard();
+          break;
+        case 'estado':
+          loadEstado();
+          break;
+        case 'datos':
+          loadDatos();
+          break;
+        case 'seguros':
+          loadSeguros();
+          break;
+      }
+    }
+
+    function loadDashboard() {
+      google.script.run
+        .withSuccessHandler(function (response) {
+          if (!response || !response.success) {
+            return;
+          }
+          const etapa = response.etapaActual || '—';
+          const gestor = response.gestor ? 'Gestor: ' + response.gestor : 'Tu gestor asignado aparecerá aquí';
+          const dias = response.diasMismoEstado ? 'Días en el mismo estado: ' + response.diasMismoEstado : 'Días en el mismo estado: –';
+          const id = response.idOperacion ? 'ID de operación: ' + response.idOperacion : 'ID de operación: –';
+
+          const summaryEtapa = document.getElementById('summaryEtapa');
+          const summaryGestor = document.getElementById('summaryGestor');
+          const summaryDias = document.getElementById('summaryDias');
+          const summaryId = document.getElementById('summaryId');
+
+          if (summaryEtapa) summaryEtapa.textContent = etapa;
+          if (summaryGestor) summaryGestor.textContent = gestor;
+          if (summaryDias) summaryDias.textContent = dias;
+          if (summaryId) summaryId.textContent = id;
+        })
+        .getDashboardSummary(state.token);
+    }
+
+    function loadEstado() {
+      const container = document.getElementById('estadoContainer');
+      if (!container) return;
+      container.classList.add('is-loading');
+
+      google.script.run
+        .withSuccessHandler(function (response) {
+          container.classList.remove('is-loading');
+          if (!response || !response.success) {
+            container.innerHTML = '<div class="empty-state">' + ((response && response.message) || 'No se pudo cargar el estado de la solicitud.') + '</div>';
+            return;
+          }
+
+          const info = response.info || {};
+          const infoBasica = document.getElementById('infoBasica');
+          if (infoBasica) {
+            infoBasica.innerHTML = '';
+            appendMeta(infoBasica, 'ID de operación', info.idOperacion || '—');
+            appendMeta(infoBasica, 'Gestor', info.gestor || '—');
+            appendMeta(infoBasica, 'Estado', info.estadoOperacion || '—');
+            appendMeta(infoBasica, 'Etapa actual', info.etapa || '—');
+            appendMeta(infoBasica, 'Días en el mismo estado', info.diasMismoEstado || '—');
+          }
+
+          const descripcion = document.getElementById('estadoDescripcion');
+          if (descripcion) {
+            descripcion.textContent = response.descripcion || '';
+          }
+
+          const steps = document.querySelectorAll('.progress-bar .step');
+          steps.forEach(function (step, index) {
+            if (index <= response.activeIndex) {
+              step.classList.add('active');
+            } else {
+              step.classList.remove('active');
+            }
+          });
+
+          const fill = document.getElementById('progressFill');
+          if (fill) {
+            fill.style.width = response.progressPercent + '%';
+          }
+        })
+        .withFailureHandler(function () {
+          container.classList.remove('is-loading');
+          container.innerHTML = '<div class="empty-state">No se pudo cargar el estado de la solicitud.</div>';
+        })
+        .getEstadoData(state.token);
+    }
+
+    function appendMeta(parent, label, value) {
+      const meta = document.createElement('div');
+      meta.className = 'meta-item';
+      meta.innerHTML = '<strong>' + label + ':</strong> ' + value;
+      parent.appendChild(meta);
+    }
+
+    function loadDatos() {
+      const container = document.getElementById('datosContenido');
+      const airtableCard = document.getElementById('airtableCard');
+      const airtableLink = document.getElementById('airtableLink');
+      if (!container) return;
+      container.classList.add('is-loading');
+
+      google.script.run
+        .withSuccessHandler(function (response) {
+          container.classList.remove('is-loading');
+          if (!response || !response.success) {
+            container.innerHTML = '<div class="empty-state">' + ((response && response.message) || 'No se pudieron cargar los datos.') + '</div>';
+            if (airtableCard) airtableCard.hidden = true;
+            return;
+          }
+
+          if (!response.visible) {
+            container.innerHTML = '<div class="empty-state">' + response.message + '</div>';
+            if (airtableCard) airtableCard.hidden = true;
+            return;
+          }
+
+          const datos = response.datos || {};
+          container.innerHTML = '';
+          const grid = document.createElement('div');
+          grid.className = 'datos-grid';
+          grid.appendChild(createDatoItem('ID de la operación', datos.idOperacion || '—'));
+          grid.appendChild(createDatoItem('Nombre del cliente', datos.nombre || '—'));
+          grid.appendChild(createDatoItem('Gestor asignado', datos.gestor || '—'));
+          grid.appendChild(createDatoItem('Días en el mismo estado', datos.diasMismoEstado || '—'));
+          grid.appendChild(createDatoItem('DNI', datos.dni || '—'));
+          grid.appendChild(createDatoItem('Precio de la vivienda', datos.precioVivienda || '—'));
+          grid.appendChild(createDatoItem('Importe de hipoteca', datos.importeHipoteca || '—'));
+          container.appendChild(grid);
+
+          if (datos.airtable && airtableCard && airtableLink) {
+            airtableCard.hidden = false;
+            airtableLink.href = datos.airtable;
+          } else if (airtableCard) {
+            airtableCard.hidden = true;
+          }
+        })
+        .withFailureHandler(function () {
+          container.classList.remove('is-loading');
+          container.innerHTML = '<div class="empty-state">No se pudieron cargar los datos.</div>';
+          if (airtableCard) airtableCard.hidden = true;
+        })
+        .getDatosData(state.token);
+    }
+
+    function createDatoItem(label, value) {
+      const item = document.createElement('div');
+      item.className = 'datos-item';
+      const labelEl = document.createElement('span');
+      labelEl.className = 'label';
+      labelEl.textContent = label;
+      const valueEl = document.createElement('span');
+      valueEl.className = 'value';
+      valueEl.textContent = value;
+      item.appendChild(labelEl);
+      item.appendChild(valueEl);
+      return item;
+    }
+
+    function loadSeguros() {
+      const grid = document.getElementById('segurosGrid');
+      const tasacionCard = document.getElementById('tasacionCard');
+      if (!grid || !tasacionCard) return;
+      grid.classList.add('is-loading');
+
+      google.script.run
+        .withSuccessHandler(function (response) {
+          grid.classList.remove('is-loading');
+          if (!response || !response.success) {
+            grid.innerHTML = '<div class="empty-state">No se pudieron cargar los enlaces disponibles.</div>';
+            return;
+          }
+
+          const seguros = response.seguros || [];
+          grid.innerHTML = '';
+          seguros.forEach(function (seguro) {
+            grid.appendChild(createSeguroCard(seguro));
+          });
+
+          const adicionales = response.adicionales || [];
+          adicionales.forEach(function (seguro) {
+            grid.appendChild(createSeguroCard(seguro));
+          });
+
+          tasacionCard.innerHTML = '';
+          const titulo = document.createElement('h2');
+          titulo.textContent = response.tasacion && response.tasacion.titulo ? response.tasacion.titulo : 'Tasación disponible';
+          const descripcion = document.createElement('p');
+          descripcion.textContent = response.tasacion && response.tasacion.descripcion ? response.tasacion.descripcion : '';
+          const link = document.createElement('a');
+          link.className = 'btn';
+          link.href = response.tasacion && response.tasacion.url ? response.tasacion.url : '#';
+          link.target = '_blank';
+          link.rel = 'noopener';
+          link.textContent = 'Solicitar tasación';
+          tasacionCard.appendChild(titulo);
+          tasacionCard.appendChild(descripcion);
+          tasacionCard.appendChild(link);
+        })
+        .withFailureHandler(function () {
+          grid.classList.remove('is-loading');
+          grid.innerHTML = '<div class="empty-state">No se pudieron cargar los enlaces disponibles.</div>';
+        })
+        .getSegurosData(state.token);
+    }
+
+    function createSeguroCard(seguro) {
+      const card = document.createElement('div');
+      card.className = 'seguro-card';
+      const titulo = document.createElement('h3');
+      titulo.textContent = seguro.titulo || 'Servicio';
+      const descripcion = document.createElement('p');
+      descripcion.textContent = seguro.descripcion || '';
+      const link = document.createElement('a');
+      link.className = 'btn';
+      link.href = seguro.url || '#';
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.textContent = 'Quiero saber más';
+      card.appendChild(titulo);
+      card.appendChild(descripcion);
+      card.appendChild(link);
+      return card;
+    }
+
+    function navigateTo(page, explicitToken) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('page', page);
+      const nextToken = explicitToken || state.token;
+      if (nextToken) {
+        url.searchParams.set('token', nextToken);
+      } else {
+        url.searchParams.delete('token');
+      }
+      window.location.href = url.toString();
+    }
+  })();
+</script>

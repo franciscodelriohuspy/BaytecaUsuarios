@@ -1,0 +1,48 @@
+<section class="panel">
+  <div class="dashboard__header">
+    <div>
+      <h1>Hola, <span id="greetingName">cliente Bayteca</span> 👋</h1>
+      <p>Desde este panel tienes accesos rápidos al estado de tu solicitud, tus datos y los servicios complementarios.</p>
+    </div>
+    <div class="summary-card">
+      <span>Estado actual</span>
+      <strong id="summaryEtapa">–</strong>
+      <small id="summaryGestor">Tu gestor asignado aparecerá aquí</small>
+      <small id="summaryDias">Días en el mismo estado: –</small>
+      <small id="summaryId">ID de operación: –</small>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ MAIN ░░ -->
+<main class="main">
+  <h2 class="section-title">Accesos rápidos</h2>
+  <section class="cards">
+    <article class="card" data-target="estado">
+      <div class="card__banner" style="background:linear-gradient(120deg,#d9f2e7,#F2FFF0);"></div>
+      <div class="card__body">
+        <h2 class="card__title">Estado de la solicitud</h2>
+        <p class="card__desc">Consulta y gestiona el progreso de cada caso en tiempo real.</p>
+        <button class="btn" type="button">Entrar</button>
+      </div>
+    </article>
+
+    <article class="card" data-target="datos">
+      <div class="card__banner" style="background:linear-gradient(120deg,#efe7ff,#ffffff);"></div>
+      <div class="card__body">
+        <h2 class="card__title">Datos y Documentación</h2>
+        <p class="card__desc">Recopila y valida la información necesaria de tu cliente.</p>
+        <button class="btn" type="button">Entrar</button>
+      </div>
+    </article>
+
+    <article class="card" data-target="seguros">
+      <div class="card__banner" style="background:linear-gradient(120deg,#eaf1ff,#ffffff);"></div>
+      <div class="card__body">
+        <h2 class="card__title">Tasación y Seguros</h2>
+        <p class="card__desc">Solicita tasaciones y compara coberturas de seguros.</p>
+        <button class="btn" type="button">Entrar</button>
+      </div>
+    </article>
+  </section>
+</main>
