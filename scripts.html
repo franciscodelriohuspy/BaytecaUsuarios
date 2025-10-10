@@ -18,9 +18,26 @@
       const messageEl = document.getElementById('loginMessage');
       const googleButton = document.getElementById('googleSignIn');
 
+      const submitButton = form ? form.querySelector('button[type="submit"]') : null;
+
       if (googleButton) {
         googleButton.addEventListener('click', function () {
-          showLoginMessage('Pronto podrás autenticarte con Google. Mientras tanto accede con tu correo y contraseña.', 'loading');
+          if (!canUseGoogleScript_()) {
+            showLoginMessage('No es posible conectar con Google en estos momentos. Inténtalo de nuevo más tarde.', 'error');
+            return;
+          }
+
+          toggleButtonState_(googleButton, true);
+          showLoginMessage('Validando con tu cuenta de Google…', 'loading');
+
+          google.script.run
+            .withSuccessHandler(function (response) {
+              handleLoginResponse_(response, submitButton, googleButton);
+            })
+            .withFailureHandler(function (error) {
+              handleLoginFailure_(error, googleButton);
+            })
+            .loginWithGoogle();
         });
       }
 
@@ -30,23 +47,22 @@
 
       form.addEventListener('submit', function (event) {
         event.preventDefault();
+        if (!canUseGoogleScript_()) {
+          showLoginMessage('No es posible conectar con el servidor. Revisa tu conexión e inténtalo en unos minutos.', 'error');
+          return;
+        }
+
         const email = form.email.value;
         const password = form.password.value;
         showLoginMessage('Validando tus datos...', 'loading');
+        toggleButtonState_(submitButton, true);
 
         google.script.run
           .withSuccessHandler(function (response) {
-            if (response && response.success) {
-              showLoginMessage('¡Bienvenido! Estamos preparando tu panel…', 'success');
-              setTimeout(function () {
-                navigateTo('index');
-              }, 500);
-            } else {
-              showLoginMessage((response && response.message) || 'No ha sido posible iniciar sesión.', 'error');
-            }
+            handleLoginResponse_(response, submitButton, googleButton);
           })
           .withFailureHandler(function (error) {
-            showLoginMessage((error && error.message) || 'No ha sido posible iniciar sesión.', 'error');
+            handleLoginFailure_(error, submitButton);
           })
           .login(email, password);
       });
@@ -64,6 +80,35 @@
         if (type === 'loading') {
           messageEl.classList.add('is-loading');
         }
+      }
+
+      function handleLoginResponse_(response, submitBtn, googleBtn) {
+        if (response && response.success) {
+          showLoginMessage('¡Bienvenido! Estamos preparando tu panel…', 'success');
+          setTimeout(function () {
+            navigateTo('index');
+          }, 500);
+          return;
+        }
+
+        showLoginMessage((response && response.message) || 'No ha sido posible iniciar sesión.', 'error');
+        toggleButtonState_(submitBtn, false);
+        toggleButtonState_(googleBtn, false);
+      }
+
+      function handleLoginFailure_(error, buttonToUnlock) {
+        showLoginMessage((error && error.message) || 'No ha sido posible iniciar sesión.', 'error');
+        toggleButtonState_(buttonToUnlock, false);
+      }
+
+      function toggleButtonState_(button, shouldDisable) {
+        if (!button) return;
+        button.disabled = !!shouldDisable;
+        button.classList.toggle('is-disabled', !!shouldDisable);
+      }
+
+      function canUseGoogleScript_() {
+        return typeof google !== 'undefined' && google.script && google.script.run;
       }
     }
 

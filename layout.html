@@ -161,6 +161,15 @@
         transform: translateY(0);
       }
 
+      .btn:disabled,
+      .btn.is-disabled {
+        cursor: not-allowed;
+        opacity: 0.65;
+        filter: none;
+        box-shadow: none;
+        transform: none;
+      }
+
       .btn--secondary {
         background: rgba(0, 56, 32, 0.08);
         color: var(--deep-pond);

@@ -39,23 +39,22 @@ function login(email, password) {
     };
   }
 
-  const operacion = findOperacionByEmail_(normalizedEmail);
-  if (!operacion) {
+  return startSessionForEmail_(normalizedEmail);
+}
+
+function loginWithGoogle() {
+  const activeUser = Session.getActiveUser();
+  const normalizedEmail = normalizeEmail_(activeUser && activeUser.getEmail());
+
+  if (!normalizedEmail) {
     clearSession_();
     return {
       success: false,
-      message: 'No hemos encontrado operaciones asociadas a ese correo. Revisa la dirección e inténtalo de nuevo.'
+      message: 'No hemos podido obtener el correo de tu cuenta de Google. Asegúrate de haber iniciado sesión con la cuenta correcta.'
     };
   }
 
-  setSession_(operacion.email, operacion.nombre);
-  return {
-    success: true,
-    user: {
-      nombre: operacion.nombre,
-      email: operacion.email
-    }
-  };
+  return startSessionForEmail_(normalizedEmail);
 }
 
 function logout() {
@@ -215,29 +214,32 @@ function findOperacionByEmail_(email) {
   if (!email) {
     return null;
   }
+
   const sheet = SpreadsheetApp.openById(OPERACIONES_SPREADSHEET_ID).getSheets()[0];
   const data = sheet.getDataRange().getValues();
   if (!data || data.length < 2) {
     return null;
   }
-  // Remove header row
-  data.shift();
+
+  const headers = data.shift();
+  const columnIndex = buildColumnIndex_(headers);
+
   for (var i = 0; i < data.length; i++) {
     var row = data[i];
-    var emailCell = normalizeEmail_(row[9]);
+    var emailCell = normalizeEmail_(row[columnIndex.email]);
     if (emailCell && emailCell === email) {
       return {
-        idOperacion: safeValue_(row[0]),
-        nombre: safeValue_(row[1]),
-        gestor: safeValue_(row[2]),
-        diasMismoEstado: safeValue_(row[4]),
-        dni: safeValue_(row[5]),
-        precioVivienda: safeValue_(row[6]),
-        importeHipoteca: safeValue_(row[7]),
-        estadoOperacion: safeValue_(row[8]),
+        idOperacion: safeValue_(row[columnIndex.idOperacion]),
+        nombre: safeValue_(row[columnIndex.nombreCliente]),
+        gestor: safeValue_(row[columnIndex.gestor]),
+        diasMismoEstado: safeValue_(row[columnIndex.diasMismoEstado]),
+        dni: safeValue_(row[columnIndex.dni]),
+        precioVivienda: safeValue_(row[columnIndex.precioVivienda]),
+        importeHipoteca: safeValue_(row[columnIndex.importeHipoteca]),
+        estadoOperacion: safeValue_(row[columnIndex.estadoOperacion]),
         email: emailCell,
-        airtable: safeValue_(row[10]),
-        etapa: safeValue_(row[11])
+        airtable: safeValue_(row[columnIndex.airtable]),
+        etapa: safeValue_(row[columnIndex.etapa])
       };
     }
   }
@@ -262,6 +264,57 @@ function clearSession_() {
   const props = PropertiesService.getUserProperties();
   props.deleteProperty(SESSION_EMAIL_KEY);
   props.deleteProperty(SESSION_NAME_KEY);
+}
+
+function startSessionForEmail_(normalizedEmail) {
+  const operacion = findOperacionByEmail_(normalizedEmail);
+  if (!operacion) {
+    clearSession_();
+    return {
+      success: false,
+      message: 'No hemos encontrado operaciones asociadas a ese correo. Revisa la dirección e inténtalo de nuevo.'
+    };
+  }
+
+  setSession_(operacion.email, operacion.nombre);
+  return {
+    success: true,
+    user: {
+      nombre: operacion.nombre,
+      email: operacion.email
+    }
+  };
+}
+
+function buildColumnIndex_(headers) {
+  var normalizedHeaders = headers.map(function (header) {
+    return String(header || '').trim().toLowerCase();
+  });
+
+  function findIndex(possibleNames, fallback) {
+    for (var i = 0; i < possibleNames.length; i++) {
+      var name = possibleNames[i];
+      var idx = normalizedHeaders.indexOf(name);
+      if (idx !== -1) {
+        return idx;
+      }
+    }
+    return fallback;
+  }
+
+  return {
+    idOperacion: findIndex(['id', 'id operacion', 'id operación'], 0),
+    nombreCliente: findIndex(['nombre', 'nombre cliente', 'cliente'], 1),
+    gestor: findIndex(['gestor', 'asesor'], 2),
+    diasMismoEstado: findIndex(['dias mismo estado', 'días mismo estado'], 4),
+    dni: findIndex(['dni', 'documento'], 5),
+    precioVivienda: findIndex(['precio vivienda', 'precio', 'valor vivienda'], 6),
+    importeHipoteca: findIndex(['importe hipoteca', 'hipoteca'], 7),
+    estadoOperacion: findIndex(['estado operacion', 'estado operación', 'estado'], 8),
+    email: findIndex(['email', 'correo', 'correo electronico', 'correo electrónico'], 9),
+    airtable: findIndex(['airtable', 'enlace airtable'], 10),
+    etapa: findIndex(['etapa', 'fase'], 11)
+  };
 }
 
 function normalizeEmail_(email) {
