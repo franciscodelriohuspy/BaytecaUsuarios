@@ -1,4 +1,5 @@
 const OPERACIONES_SPREADSHEET_ID = '1rwCBi1BRyz6wd7528jZv_X1hXY-PyLSm4rWiUA0Nhbo';
+const CREDENCIALES_SPREADSHEET_ID = '1kNiGw6zVxsvtWi1YHWo3zC7qN12t-bwJnao45_ubhKE';
 const SESSION_EMAIL_KEY = 'BAYTECA_ACTIVE_EMAIL';
 const SESSION_NAME_KEY = 'BAYTECA_ACTIVE_NAME';
 const PROGRESS_STEPS = ['DOCUMENTACIÓN', 'ESTUDIO BANCARIO', 'OFERTA RECIBIDA', 'TASACIÓN', 'FEIN/NOTARÍA'];
@@ -39,6 +40,29 @@ function login(email, password) {
     };
   }
 
+  const sanitizedPassword = typeof password === 'string' ? password.trim() : '';
+  if (!sanitizedPassword) {
+    return {
+      success: false,
+      message: 'Introduce tu contraseña para continuar.'
+    };
+  }
+
+  const credentials = findCredentialsByEmail_(normalizedEmail);
+  if (!credentials) {
+    return {
+      success: false,
+      message: 'No hemos encontrado un usuario con ese correo. Revisa la dirección o contacta con tu gestor.'
+    };
+  }
+
+  if (credentials.password !== sanitizedPassword) {
+    return {
+      success: false,
+      message: 'La contraseña no coincide con nuestros registros. Vuelve a intentarlo.'
+    };
+  }
+
   return startSessionForEmail_(normalizedEmail);
 }
 
@@ -51,6 +75,15 @@ function loginWithGoogle() {
     return {
       success: false,
       message: 'No hemos podido obtener el correo de tu cuenta de Google. Asegúrate de haber iniciado sesión con la cuenta correcta.'
+    };
+  }
+
+  const credentials = findCredentialsByEmail_(normalizedEmail);
+  if (!credentials) {
+    clearSession_();
+    return {
+      success: false,
+      message: 'Tu cuenta de Google no está autorizada para acceder. Inicia sesión con tu correo y contraseña o contacta con tu gestor.'
     };
   }
 
@@ -243,6 +276,35 @@ function findOperacionByEmail_(email) {
       };
     }
   }
+  return null;
+}
+
+function findCredentialsByEmail_(email) {
+  if (!email) {
+    return null;
+  }
+
+  const sheet = SpreadsheetApp.openById(CREDENCIALES_SPREADSHEET_ID).getSheets()[0];
+  const data = sheet.getDataRange().getValues();
+  if (!data || data.length === 0) {
+    return null;
+  }
+
+  for (var i = 0; i < data.length; i++) {
+    var row = data[i];
+    var emailCell = normalizeEmail_(row[0]);
+    if (!emailCell || emailCell.indexOf('@') === -1) {
+      continue;
+    }
+
+    if (emailCell === email) {
+      return {
+        email: emailCell,
+        password: typeof row[1] === 'string' ? row[1].trim() : String(row[1] || '').trim()
+      };
+    }
+  }
+
   return null;
 }
 
