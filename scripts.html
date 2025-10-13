@@ -5,6 +5,43 @@
       page: document.body.dataset.page
     };
 
+    const STATIC_SEGUROS_DATA = {
+      seguros: [
+        {
+          titulo: 'Seguro de Vida',
+          descripcion: 'Protege a los tuyos con una cobertura personalizada a tus necesidades.',
+          url: 'https://huspy.typeform.com/to/sKStpQM6'
+        },
+        {
+          titulo: 'Seguro de Hogar',
+          descripcion: 'Cuida tu vivienda y tus bienes frente a cualquier imprevisto.',
+          url: 'https://huspy.typeform.com/to/RXB2stWf'
+        },
+        {
+          titulo: 'Seguro de Salud',
+          descripcion: 'Accede a la mejor cobertura médica con la ayuda de nuestro equipo.',
+          url: 'https://huspy.typeform.com/to/RXB2stWf'
+        }
+      ],
+      adicionales: [
+        {
+          titulo: 'Alarma Despertador',
+          descripcion: '¿Tienes seguros que no puedes cambiar aún? Cuéntanos cuándo vencen y te avisamos con una propuesta.',
+          url: 'https://huspy.typeform.com/to/kGQfaxnG'
+        },
+        {
+          titulo: 'Recomiéndanos',
+          descripcion: 'Comparte Bayteca con tus contactos. ¡Gracias por confiar en nosotros! ',
+          url: 'https://huspy.typeform.com/to/OneCu9av'
+        }
+      ],
+      tasacion: {
+        titulo: 'Solicitar tasación con Tinsa',
+        descripcion: 'Gestiona tu tasación de forma rápida con nuestro socio Tinsa.',
+        url: 'https://store.tinsa.es/orders/appraisal/location?partnerId=BAYT&referralOrigin=web-generalista'
+      }
+    };
+
     document.addEventListener('DOMContentLoaded', function () {
       if (state.page === 'login') {
         initLogin();
@@ -218,77 +255,51 @@
     }
 
     function loadDashboard() {
-      google.script.run
-        .withSuccessHandler(function (response) {
-          if (!response || !response.success) {
-            return;
-          }
-          const etapa = response.etapaActual || '—';
-          const gestor = response.gestor ? 'Gestor: ' + response.gestor : 'Tu gestor asignado aparecerá aquí';
-          const dias = response.diasMismoEstado ? 'Días en el mismo estado: ' + response.diasMismoEstado : 'Días en el mismo estado: –';
-          const id = response.idOperacion ? 'ID de operación: ' + response.idOperacion : 'ID de operación: –';
+      const summaryEtapa = document.getElementById('summaryEtapa');
+      const summaryGestor = document.getElementById('summaryGestor');
+      const summaryDias = document.getElementById('summaryDias');
+      const summaryId = document.getElementById('summaryId');
 
-          const summaryEtapa = document.getElementById('summaryEtapa');
-          const summaryGestor = document.getElementById('summaryGestor');
-          const summaryDias = document.getElementById('summaryDias');
-          const summaryId = document.getElementById('summaryId');
-
-          if (summaryEtapa) summaryEtapa.textContent = etapa;
-          if (summaryGestor) summaryGestor.textContent = gestor;
-          if (summaryDias) summaryDias.textContent = dias;
-          if (summaryId) summaryId.textContent = id;
-        })
-        .getDashboardSummary();
+      if (summaryEtapa) summaryEtapa.textContent = '—';
+      if (summaryGestor) summaryGestor.textContent = 'Tu gestor asignado aparecerá aquí';
+      if (summaryDias) summaryDias.textContent = 'Días en el mismo estado: –';
+      if (summaryId) summaryId.textContent = 'ID de operación: –';
     }
 
     function loadEstado() {
       const container = document.getElementById('estadoContainer');
       if (!container) return;
-      container.classList.add('is-loading');
+      container.classList.remove('is-loading');
 
-      google.script.run
-        .withSuccessHandler(function (response) {
-          container.classList.remove('is-loading');
-          if (!response || !response.success) {
-            container.innerHTML = '<div class="empty-state">' + ((response && response.message) || 'No se pudo cargar el estado de la solicitud.') + '</div>';
-            return;
-          }
+      const infoBasica = document.getElementById('infoBasica');
+      if (infoBasica) {
+        infoBasica.innerHTML = '';
+        appendMeta(infoBasica, 'ID de operación', '—');
+        appendMeta(infoBasica, 'Gestor', '—');
+        appendMeta(infoBasica, 'Estado', '—');
+        appendMeta(infoBasica, 'Etapa actual', '—');
+        appendMeta(infoBasica, 'Días en el mismo estado', '—');
+      }
 
-          const info = response.info || {};
-          const infoBasica = document.getElementById('infoBasica');
-          if (infoBasica) {
-            infoBasica.innerHTML = '';
-            appendMeta(infoBasica, 'ID de operación', info.idOperacion || '—');
-            appendMeta(infoBasica, 'Gestor', info.gestor || '—');
-            appendMeta(infoBasica, 'Estado', info.estadoOperacion || '—');
-            appendMeta(infoBasica, 'Etapa actual', info.etapa || '—');
-            appendMeta(infoBasica, 'Días en el mismo estado', info.diasMismoEstado || '—');
-          }
+      const descripcion = document.getElementById('estadoDescripcion');
+      if (descripcion) {
+        descripcion.textContent = 'Aquí verás el detalle de tu solicitud y los siguientes pasos en cuanto estén disponibles.';
+      }
 
-          const descripcion = document.getElementById('estadoDescripcion');
-          if (descripcion) {
-            descripcion.textContent = response.descripcion || '';
-          }
+      const meta = document.getElementById('estadoMeta');
+      if (meta) {
+        meta.textContent = 'Pronto mostraremos la evolución de tu operación en este panel.';
+      }
 
-          const steps = document.querySelectorAll('.progress-bar .step');
-          steps.forEach(function (step, index) {
-            if (index <= response.activeIndex) {
-              step.classList.add('active');
-            } else {
-              step.classList.remove('active');
-            }
-          });
+      const steps = document.querySelectorAll('.progress-bar .step');
+      steps.forEach(function (step) {
+        step.classList.remove('active');
+      });
 
-          const fill = document.getElementById('progressFill');
-          if (fill) {
-            fill.style.width = response.progressPercent + '%';
-          }
-        })
-        .withFailureHandler(function () {
-          container.classList.remove('is-loading');
-          container.innerHTML = '<div class="empty-state">No se pudo cargar el estado de la solicitud.</div>';
-        })
-        .getEstadoData();
+      const fill = document.getElementById('progressFill');
+      if (fill) {
+        fill.style.width = '0%';
+      }
     }
 
     function appendMeta(parent, label, value) {
@@ -301,51 +312,30 @@
     function loadDatos() {
       const container = document.getElementById('datosContenido');
       const airtableCard = document.getElementById('airtableCard');
-      const airtableLink = document.getElementById('airtableLink');
       if (!container) return;
-      container.classList.add('is-loading');
 
-      google.script.run
-        .withSuccessHandler(function (response) {
-          container.classList.remove('is-loading');
-          if (!response || !response.success) {
-            container.innerHTML = '<div class="empty-state">' + ((response && response.message) || 'No se pudieron cargar los datos.') + '</div>';
-            if (airtableCard) airtableCard.hidden = true;
-            return;
-          }
+      container.classList.remove('is-loading');
+      container.innerHTML = '';
 
-          if (!response.visible) {
-            container.innerHTML = '<div class="empty-state">' + response.message + '</div>';
-            if (airtableCard) airtableCard.hidden = true;
-            return;
-          }
+      const grid = document.createElement('div');
+      grid.className = 'datos-grid';
+      grid.appendChild(createDatoItem('ID de la operación', '—'));
+      grid.appendChild(createDatoItem('Nombre del cliente', state.session && state.session.nombre ? state.session.nombre : '—'));
+      grid.appendChild(createDatoItem('Gestor asignado', '—'));
+      grid.appendChild(createDatoItem('Días en el mismo estado', '—'));
+      grid.appendChild(createDatoItem('DNI', '—'));
+      grid.appendChild(createDatoItem('Precio de la vivienda', '—'));
+      grid.appendChild(createDatoItem('Importe de hipoteca', '—'));
+      container.appendChild(grid);
 
-          const datos = response.datos || {};
-          container.innerHTML = '';
-          const grid = document.createElement('div');
-          grid.className = 'datos-grid';
-          grid.appendChild(createDatoItem('ID de la operación', datos.idOperacion || '—'));
-          grid.appendChild(createDatoItem('Nombre del cliente', datos.nombre || '—'));
-          grid.appendChild(createDatoItem('Gestor asignado', datos.gestor || '—'));
-          grid.appendChild(createDatoItem('Días en el mismo estado', datos.diasMismoEstado || '—'));
-          grid.appendChild(createDatoItem('DNI', datos.dni || '—'));
-          grid.appendChild(createDatoItem('Precio de la vivienda', datos.precioVivienda || '—'));
-          grid.appendChild(createDatoItem('Importe de hipoteca', datos.importeHipoteca || '—'));
-          container.appendChild(grid);
+      const helperText = document.createElement('p');
+      helperText.className = 'empty-state';
+      helperText.textContent = 'Muy pronto podrás consultar y actualizar tu información desde este mismo panel.';
+      container.appendChild(helperText);
 
-          if (datos.airtable && airtableCard && airtableLink) {
-            airtableCard.hidden = false;
-            airtableLink.href = datos.airtable;
-          } else if (airtableCard) {
-            airtableCard.hidden = true;
-          }
-        })
-        .withFailureHandler(function () {
-          container.classList.remove('is-loading');
-          container.innerHTML = '<div class="empty-state">No se pudieron cargar los datos.</div>';
-          if (airtableCard) airtableCard.hidden = true;
-        })
-        .getDatosData();
+      if (airtableCard) {
+        airtableCard.hidden = true;
+      }
     }
 
     function createDatoItem(label, value) {
@@ -366,47 +356,40 @@
       const grid = document.getElementById('segurosGrid');
       const tasacionCard = document.getElementById('tasacionCard');
       if (!grid || !tasacionCard) return;
-      grid.classList.add('is-loading');
 
-      google.script.run
-        .withSuccessHandler(function (response) {
-          grid.classList.remove('is-loading');
-          if (!response || !response.success) {
-            grid.innerHTML = '<div class="empty-state">No se pudieron cargar los enlaces disponibles.</div>';
-            return;
-          }
+      grid.classList.remove('is-loading');
+      grid.innerHTML = '';
 
-          const seguros = response.seguros || [];
-          grid.innerHTML = '';
-          seguros.forEach(function (seguro) {
-            grid.appendChild(createSeguroCard(seguro));
-          });
+      const seguros = STATIC_SEGUROS_DATA.seguros || [];
+      seguros.forEach(function (seguro) {
+        grid.appendChild(createSeguroCard(seguro));
+      });
 
-          const adicionales = response.adicionales || [];
-          adicionales.forEach(function (seguro) {
-            grid.appendChild(createSeguroCard(seguro));
-          });
+      const adicionales = STATIC_SEGUROS_DATA.adicionales || [];
+      adicionales.forEach(function (seguro) {
+        grid.appendChild(createSeguroCard(seguro));
+      });
 
-          tasacionCard.innerHTML = '';
-          const titulo = document.createElement('h2');
-          titulo.textContent = response.tasacion && response.tasacion.titulo ? response.tasacion.titulo : 'Tasación disponible';
-          const descripcion = document.createElement('p');
-          descripcion.textContent = response.tasacion && response.tasacion.descripcion ? response.tasacion.descripcion : '';
-          const link = document.createElement('a');
-          link.className = 'btn';
-          link.href = response.tasacion && response.tasacion.url ? response.tasacion.url : '#';
-          link.target = '_blank';
-          link.rel = 'noopener';
-          link.textContent = 'Solicitar tasación';
-          tasacionCard.appendChild(titulo);
-          tasacionCard.appendChild(descripcion);
-          tasacionCard.appendChild(link);
-        })
-        .withFailureHandler(function () {
-          grid.classList.remove('is-loading');
-          grid.innerHTML = '<div class="empty-state">No se pudieron cargar los enlaces disponibles.</div>';
-        })
-        .getSegurosData();
+      tasacionCard.innerHTML = '';
+      const titulo = document.createElement('h2');
+      titulo.textContent = STATIC_SEGUROS_DATA.tasacion && STATIC_SEGUROS_DATA.tasacion.titulo
+        ? STATIC_SEGUROS_DATA.tasacion.titulo
+        : 'Tasación disponible';
+      const descripcion = document.createElement('p');
+      descripcion.textContent = STATIC_SEGUROS_DATA.tasacion && STATIC_SEGUROS_DATA.tasacion.descripcion
+        ? STATIC_SEGUROS_DATA.tasacion.descripcion
+        : '';
+      const link = document.createElement('a');
+      link.className = 'btn';
+      link.href = STATIC_SEGUROS_DATA.tasacion && STATIC_SEGUROS_DATA.tasacion.url
+        ? STATIC_SEGUROS_DATA.tasacion.url
+        : '#';
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.textContent = 'Solicitar tasación';
+      tasacionCard.appendChild(titulo);
+      tasacionCard.appendChild(descripcion);
+      tasacionCard.appendChild(link);
     }
 
     function createSeguroCard(seguro) {
