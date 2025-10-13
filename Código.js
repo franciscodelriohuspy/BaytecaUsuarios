@@ -347,6 +347,7 @@ function startSessionForEmail_(normalizedEmail) {
     return {
       success: true,
       hasOperacion: true,
+      redirectUrl: buildPageUrl('index'),
       user: {
         nombre: operacion.nombre,
         email: operacion.email
@@ -361,6 +362,7 @@ function startSessionForEmail_(normalizedEmail) {
     return {
       success: true,
       hasOperacion: false,
+      redirectUrl: buildPageUrl('index'),
       user: {
         nombre: nombre || 'Cliente Bayteca',
         email: credentials.email
