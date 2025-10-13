@@ -247,7 +247,6 @@ function getOperacionActual_(optionalEmail) {
   const email = optionalEmail ? normalizeEmail_(optionalEmail) : requireSessionEmail_();
   const operacion = findOperacionByEmail_(email);
   if (!operacion) {
-    clearSession_();
     throw new Error('NO_DATA_FOUND');
   }
   return operacion;
@@ -310,7 +309,8 @@ function findCredentialsByEmail_(email) {
     if (emailCell === email) {
       return {
         email: emailCell,
-        password: typeof row[1] === 'string' ? row[1].trim() : String(row[1] || '').trim()
+        password: typeof row[1] === 'string' ? row[1].trim() : String(row[1] || '').trim(),
+        nombre: typeof row[2] === 'string' ? row[2].trim() : String(row[2] || '').trim()
       };
     }
   }
@@ -340,21 +340,37 @@ function clearSession_() {
 
 function startSessionForEmail_(normalizedEmail) {
   const operacion = findOperacionByEmail_(normalizedEmail);
-  if (!operacion) {
-    clearSession_();
+  if (operacion) {
+    setSession_(operacion.email, operacion.nombre);
     return {
-      success: false,
-      message: 'No hemos encontrado operaciones asociadas a ese correo. Revisa la dirección e inténtalo de nuevo.'
+      success: true,
+      hasOperacion: true,
+      user: {
+        nombre: operacion.nombre,
+        email: operacion.email
+      }
     };
   }
 
-  setSession_(operacion.email, operacion.nombre);
+  const credentials = findCredentialsByEmail_(normalizedEmail);
+  if (credentials) {
+    const nombre = credentials.nombre || '';
+    setSession_(credentials.email, nombre);
+    return {
+      success: true,
+      hasOperacion: false,
+      user: {
+        nombre: nombre || 'Cliente Bayteca',
+        email: credentials.email
+      },
+      message: 'Hemos validado tu acceso, pero todavía no encontramos una operación asociada a tu correo.'
+    };
+  }
+
+  clearSession_();
   return {
-    success: true,
-    user: {
-      nombre: operacion.nombre,
-      email: operacion.email
-    }
+    success: false,
+    message: 'No hemos encontrado operaciones asociadas a ese correo. Revisa la dirección e inténtalo de nuevo.'
   };
 }
 

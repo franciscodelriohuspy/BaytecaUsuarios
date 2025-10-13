@@ -84,10 +84,15 @@
 
       function handleLoginResponse_(response, submitBtn, googleBtn) {
         if (response && response.success) {
-          showLoginMessage('¡Bienvenido! Estamos preparando tu panel…', 'success');
+          var successMessage = '¡Bienvenido! Estamos preparando tu panel…';
+          if (response.hasOperacion === false && response.message) {
+            successMessage = response.message + ' En cuanto vinculemos tu expediente podrás ver tu panel completo.';
+          }
+          showLoginMessage(successMessage, 'success');
+          var redirectDelay = response.hasOperacion === false ? 1500 : 500;
           setTimeout(function () {
             navigateTo('index');
-          }, 500);
+          }, redirectDelay);
           return;
         }
 
