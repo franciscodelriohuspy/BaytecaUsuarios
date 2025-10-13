@@ -1,5 +1,4 @@
 const OPERACIONES_SPREADSHEET_ID = '1rwCBi1BRyz6wd7528jZv_X1hXY-PyLSm4rWiUA0Nhbo';
-const OPERACIONES_EMAIL_COLUMN_INDEX = 9; // Columna J
 const CREDENCIALES_SPREADSHEET_ID = '1kNiGw6zVxsvtWi1YHWo3zC7qN12t-bwJnao45_ubhKE';
 const SESSION_EMAIL_KEY = 'BAYTECA_ACTIVE_EMAIL';
 const SESSION_NAME_KEY = 'BAYTECA_ACTIVE_NAME';
@@ -268,7 +267,9 @@ function findOperacionByEmail_(email) {
 
   const headers = data.shift();
   const columnIndex = buildColumnIndex_(headers);
-  const emailColumnIndex = OPERACIONES_EMAIL_COLUMN_INDEX;
+  const emailColumnIndex = typeof columnIndex.email === 'number'
+    ? columnIndex.email
+    : 9; // Fallback a la columna J si no se identifica por el encabezado
 
   for (var i = 0; i < data.length; i++) {
     var row = data[i];
