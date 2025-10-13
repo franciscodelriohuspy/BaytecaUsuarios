@@ -90,7 +90,13 @@
           }
           showLoginMessage(successMessage, 'success');
           var redirectDelay = response.hasOperacion === false ? 1500 : 500;
+          var redirectUrl = response.redirectUrl;
           setTimeout(function () {
+            var targetWindow = window.top || window;
+            if (redirectUrl) {
+              targetWindow.location.href = redirectUrl;
+              return;
+            }
             navigateTo('index');
           }, redirectDelay);
           return;

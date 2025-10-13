@@ -88,16 +88,18 @@ function loginWithGoogle() {
     };
   }
 
-  const credentials = findCredentialsByEmail_(normalizedEmail);
-  if (!credentials) {
-    clearSession_();
-    return {
-      success: false,
-      message: 'Tu cuenta de Google no está autorizada para acceder. Inicia sesión con tu correo y contraseña o contacta con tu gestor.'
-    };
+  const sessionResult = startSessionForEmail_(normalizedEmail);
+  if (sessionResult && sessionResult.success) {
+    return sessionResult;
   }
 
-  return startSessionForEmail_(normalizedEmail);
+  clearSession_();
+  return {
+    success: false,
+    message: sessionResult && sessionResult.message
+      ? sessionResult.message
+      : 'Tu cuenta de Google no está autorizada para acceder. Inicia sesión con tu correo y contraseña o contacta con tu gestor.'
+  };
 }
 
 function logout() {
@@ -345,6 +347,7 @@ function startSessionForEmail_(normalizedEmail) {
     return {
       success: true,
       hasOperacion: true,
+      redirectUrl: buildPageUrl('index'),
       user: {
         nombre: operacion.nombre,
         email: operacion.email
@@ -359,6 +362,7 @@ function startSessionForEmail_(normalizedEmail) {
     return {
       success: true,
       hasOperacion: false,
+      redirectUrl: buildPageUrl('index'),
       user: {
         nombre: nombre || 'Cliente Bayteca',
         email: credentials.email
