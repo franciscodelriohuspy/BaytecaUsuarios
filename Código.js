@@ -1,4 +1,5 @@
 const OPERACIONES_SPREADSHEET_ID = '1rwCBi1BRyz6wd7528jZv_X1hXY-PyLSm4rWiUA0Nhbo';
+const OPERACIONES_EMAIL_COLUMN_INDEX = 9; // Columna J
 const CREDENCIALES_SPREADSHEET_ID = '1kNiGw6zVxsvtWi1YHWo3zC7qN12t-bwJnao45_ubhKE';
 const SESSION_EMAIL_KEY = 'BAYTECA_ACTIVE_EMAIL';
 const SESSION_NAME_KEY = 'BAYTECA_ACTIVE_NAME';
@@ -88,16 +89,18 @@ function loginWithGoogle() {
     };
   }
 
-  const credentials = findCredentialsByEmail_(normalizedEmail);
-  if (!credentials) {
-    clearSession_();
-    return {
-      success: false,
-      message: 'Tu cuenta de Google no está autorizada para acceder. Inicia sesión con tu correo y contraseña o contacta con tu gestor.'
-    };
+  const sessionResult = startSessionForEmail_(normalizedEmail);
+  if (sessionResult && sessionResult.success) {
+    return sessionResult;
   }
 
-  return startSessionForEmail_(normalizedEmail);
+  clearSession_();
+  return {
+    success: false,
+    message: sessionResult && sessionResult.message
+      ? sessionResult.message
+      : 'Tu cuenta de Google no está autorizada para acceder. Inicia sesión con tu correo y contraseña o contacta con tu gestor.'
+  };
 }
 
 function logout() {
@@ -265,10 +268,15 @@ function findOperacionByEmail_(email) {
 
   const headers = data.shift();
   const columnIndex = buildColumnIndex_(headers);
+  const emailColumnIndex = OPERACIONES_EMAIL_COLUMN_INDEX;
 
   for (var i = 0; i < data.length; i++) {
     var row = data[i];
-    var emailCell = normalizeEmail_(row[columnIndex.email]);
+    if (row.length <= emailColumnIndex) {
+      continue;
+    }
+
+    var emailCell = normalizeEmail_(row[emailColumnIndex]);
     if (emailCell && emailCell === email) {
       return {
         idOperacion: safeValue_(row[columnIndex.idOperacion]),
@@ -345,6 +353,7 @@ function startSessionForEmail_(normalizedEmail) {
     return {
       success: true,
       hasOperacion: true,
+      redirectUrl: buildPageUrl('index'),
       user: {
         nombre: operacion.nombre,
         email: operacion.email
@@ -359,6 +368,7 @@ function startSessionForEmail_(normalizedEmail) {
     return {
       success: true,
       hasOperacion: false,
+      redirectUrl: buildPageUrl('index'),
       user: {
         nombre: nombre || 'Cliente Bayteca',
         email: credentials.email
@@ -379,7 +389,7 @@ function buildColumnIndex_(headers) {
     return String(header || '').trim().toLowerCase();
   });
 
-  function findIndex(possibleNames, fallback) {
+  function findIndex(possibleNames, fallback, predicate) {
     for (var i = 0; i < possibleNames.length; i++) {
       var name = possibleNames[i];
       var idx = normalizedHeaders.indexOf(name);
@@ -387,6 +397,15 @@ function buildColumnIndex_(headers) {
         return idx;
       }
     }
+
+    if (typeof predicate === 'function') {
+      for (var j = 0; j < normalizedHeaders.length; j++) {
+        if (predicate(normalizedHeaders[j])) {
+          return j;
+        }
+      }
+    }
+
     return fallback;
   }
 
@@ -399,7 +418,7 @@ function buildColumnIndex_(headers) {
     precioVivienda: findIndex(['precio vivienda', 'precio', 'valor vivienda'], 6),
     importeHipoteca: findIndex(['importe hipoteca', 'hipoteca'], 7),
     estadoOperacion: findIndex(['estado operacion', 'estado operación', 'estado'], 8),
-    email: findIndex(['email', 'correo', 'correo electronico', 'correo electrónico'], 9),
+    email: OPERACIONES_EMAIL_COLUMN_INDEX,
     airtable: findIndex(['airtable', 'enlace airtable'], 10),
     etapa: findIndex(['etapa', 'fase'], 11)
   };
