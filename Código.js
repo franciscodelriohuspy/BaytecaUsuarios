@@ -1,8 +1,6 @@
-const OPERACIONES_SPREADSHEET_ID = '1rwCBi1BRyz6wd7528jZv_X1hXY-PyLSm4rWiUA0Nhbo';
 const CREDENCIALES_SPREADSHEET_ID = '1kNiGw6zVxsvtWi1YHWo3zC7qN12t-bwJnao45_ubhKE';
 const SESSION_EMAIL_KEY = 'BAYTECA_ACTIVE_EMAIL';
 const SESSION_NAME_KEY = 'BAYTECA_ACTIVE_NAME';
-const PROGRESS_STEPS = ['DOCUMENTACIÓN', 'ESTUDIO BANCARIO', 'OFERTA RECIBIDA', 'TASACIÓN', 'FEIN/NOTARÍA'];
 
 function doGet(e) {
   const session = getSession();
@@ -73,7 +71,7 @@ function login(email, password) {
     };
   }
 
-  return startSessionForEmail_(normalizedEmail);
+  return startSessionFromCredentials_(credentials);
 }
 
 function loginWithGoogle() {
@@ -88,17 +86,15 @@ function loginWithGoogle() {
     };
   }
 
-  const sessionResult = startSessionForEmail_(normalizedEmail);
-  if (sessionResult && sessionResult.success) {
-    return sessionResult;
+  const credentials = findCredentialsByEmail_(normalizedEmail);
+  if (credentials) {
+    return startSessionFromCredentials_(credentials);
   }
 
   clearSession_();
   return {
     success: false,
-    message: sessionResult && sessionResult.message
-      ? sessionResult.message
-      : 'Tu cuenta de Google no está autorizada para acceder. Inicia sesión con tu correo y contraseña o contacta con tu gestor.'
+    message: 'Tu cuenta de Google no está autorizada para acceder. Inicia sesión con tu correo y contraseña o contacta con tu gestor.'
   };
 }
 
@@ -120,78 +116,36 @@ function getSession() {
 }
 
 function getDashboardSummary() {
-  try {
-    const operacion = getOperacionActual_();
+  const session = getSession();
+  if (!session) {
     return {
-      success: true,
-      nombre: operacion.nombre,
-      idOperacion: operacion.idOperacion,
-      etapaActual: operacion.etapa,
-      diasMismoEstado: operacion.diasMismoEstado,
-      gestor: operacion.gestor
+      success: false,
+      message: 'NO_SESSION'
     };
-  } catch (err) {
-    return buildErrorResponse_(err);
   }
-}
-
-function getEstadoData() {
-  try {
-    const operacion = getOperacionActual_();
-    const etapaActual = operacion.etapa || '';
-    const activeIndex = Math.max(PROGRESS_STEPS.indexOf(etapaActual), 0);
-    const progressPercent = PROGRESS_STEPS.length > 1
-      ? (activeIndex / (PROGRESS_STEPS.length - 1)) * 100
-      : 0;
-
-    return {
-      success: true,
-      info: {
-        idOperacion: operacion.idOperacion,
-        nombre: operacion.nombre,
-        gestor: operacion.gestor,
-        etapa: etapaActual,
-        estadoOperacion: operacion.estadoOperacion,
-        diasMismoEstado: operacion.diasMismoEstado
-      },
-      activeIndex: activeIndex,
-      progressPercent: Math.min(progressPercent, 100),
-      steps: PROGRESS_STEPS,
-      descripcion: getDescripcionEtapa_(etapaActual)
-    };
-  } catch (err) {
-    return buildErrorResponse_(err);
-  }
+  return {
+    success: true,
+    nombre: session.nombre || '',
+    idOperacion: '',
+    etapaActual: '',
+    diasMismoEstado: '',
+    gestor: ''
+  };
 }
 
 function getDatosData() {
-  try {
-    const operacion = getOperacionActual_();
-    if (String(operacion.estadoOperacion).toUpperCase() !== 'OPEN') {
-      return {
-        success: true,
-        visible: false,
-        message: 'Tu operación no se encuentra en estado abierto en estos momentos. Contacta con tu gestor para más información.'
-      };
-    }
-
+  const session = getSession();
+  if (!session) {
     return {
-      success: true,
-      visible: true,
-      datos: {
-        idOperacion: operacion.idOperacion,
-        nombre: operacion.nombre,
-        gestor: operacion.gestor,
-        diasMismoEstado: operacion.diasMismoEstado,
-        dni: operacion.dni,
-        precioVivienda: operacion.precioVivienda,
-        importeHipoteca: operacion.importeHipoteca,
-        airtable: operacion.airtable
-      }
+      success: false,
+      message: 'NO_SESSION'
     };
-  } catch (err) {
-    return buildErrorResponse_(err);
   }
+  return {
+    success: true,
+    visible: false,
+    message: 'Los datos de tu operación estarán disponibles próximamente.'
+  };
 }
 
 function getSegurosData() {
@@ -234,145 +188,43 @@ function getSegurosData() {
   };
 }
 
-function getDescripcionEtapa_(etapa) {
-  const descripcionPorEtapa = {
-    'DOCUMENTACIÓN': 'Estamos recopilando y validando la documentación necesaria para tu operación. Puedes revisar si falta algún documento en la sección de datos.',
-    'ESTUDIO BANCARIO': 'Tu expediente está siendo analizado por la entidad bancaria. Nos aseguramos de que toda la información esté en orden.',
-    'OFERTA RECIBIDA': '¡Buenas noticias! Ya contamos con una oferta. Estamos revisando todos los detalles para presentártela.',
-    'TASACIÓN': 'Coordinamos la tasación del inmueble para avanzar con tu hipoteca. Te mantendremos informado de cada paso.',
-    'FEIN/NOTARÍA': 'Ultimamos detalles para la firma. Te acompañamos hasta el día de la notaría.'
-  };
-  return descripcionPorEtapa[etapa] || 'Estamos avanzando en tu operación. Si necesitas más información contacta con tu gestor.';
-}
-
-function getOperacionActual_(optionalEmail) {
-  const email = optionalEmail ? normalizeEmail_(optionalEmail) : requireSessionEmail_();
-  const operacion = findOperacionByEmail_(email);
-  if (!operacion) {
-    throw new Error('NO_DATA_FOUND');
-  }
-  return operacion;
-}
-
-function findOperacionByEmail_(email) {
+function startSessionFromCredentials_(credentials) {
+  const email = normalizeEmail_(credentials && credentials.email);
   if (!email) {
-    return null;
+    clearSession_();
+    return {
+      success: false,
+      message: 'No hemos encontrado un usuario con ese correo. Revisa la dirección o contacta con tu gestor.'
+    };
   }
 
-  const sheet = getOperacionesSheet_();
-  if (!sheet) {
-    return null;
-  }
+  const nombre = typeof credentials.nombre === 'string' && credentials.nombre.trim()
+    ? credentials.nombre.trim()
+    : 'Cliente Bayteca';
 
-  const rawValues = sheet.getDataRange().getValues();
-  if (!rawValues || rawValues.length === 0) {
-    return null;
-  }
+  setSession_(email, nombre);
 
-  const headerInfo = extractHeaderInfo_(rawValues) || {
-    headers: rawValues[0],
-    firstDataRowIndex: Math.min(1, rawValues.length)
+  return {
+    success: true,
+    redirectUrl: buildPageUrl('index'),
+    hasOperacion: false,
+    user: {
+      nombre: nombre,
+      email: email
+    }
   };
-
-  if (!headerInfo || !headerInfo.headers || headerInfo.headers.length === 0) {
-    return null;
-  }
-
-  const headers = headerInfo.headers.slice();
-  const data = rawValues.slice(headerInfo.firstDataRowIndex);
-  if (data.length === 0) {
-    return null;
-  }
-
-  const columnIndex = buildColumnIndex_(headers);
-  const emailColumnIndex = typeof columnIndex.email === 'number'
-    ? columnIndex.email
-    : 9; // Fallback a la columna J si no se identifica por el encabezado
-
-  for (var i = 0; i < data.length; i++) {
-    var row = data[i];
-    if (row.length <= emailColumnIndex) {
-      continue;
-    }
-
-    var emailCell = normalizeEmail_(row[emailColumnIndex]);
-    if (emailCell && emailCell === email) {
-      return {
-        idOperacion: safeValue_(row[columnIndex.idOperacion]),
-        nombre: safeValue_(row[columnIndex.nombreCliente]),
-        gestor: safeValue_(row[columnIndex.gestor]),
-        diasMismoEstado: safeValue_(row[columnIndex.diasMismoEstado]),
-        dni: safeValue_(row[columnIndex.dni]),
-        precioVivienda: safeValue_(row[columnIndex.precioVivienda]),
-        importeHipoteca: safeValue_(row[columnIndex.importeHipoteca]),
-        estadoOperacion: safeValue_(row[columnIndex.estadoOperacion]),
-        email: emailCell,
-        airtable: safeValue_(row[columnIndex.airtable]),
-        etapa: safeValue_(row[columnIndex.etapa])
-      };
-    }
-  }
-  return null;
 }
 
-function getOperacionesSheet_() {
-  const spreadsheet = SpreadsheetApp.openById(OPERACIONES_SPREADSHEET_ID);
-  const sheets = spreadsheet.getSheets();
-  if (!sheets || sheets.length === 0) {
-    return null;
-  }
-
-  for (var i = 0; i < sheets.length; i++) {
-    var sheet = sheets[i];
-    var sampleRowCount = Math.min(10, Math.max(sheet.getLastRow(), 1));
-    var sampleColCount = Math.max(sheet.getLastColumn(), 1);
-    var sampleRange = sheet.getRange(1, 1, sampleRowCount, sampleColCount);
-    var sampleValues = sampleRange.getValues();
-    var headerInfo = extractHeaderInfo_(sampleValues);
-    if (headerInfo) {
-      return sheet;
-    }
-  }
-
-  return sheets[0];
+function setSession_(email, nombre) {
+  const props = PropertiesService.getUserProperties();
+  props.setProperty(SESSION_EMAIL_KEY, email);
+  props.setProperty(SESSION_NAME_KEY, nombre || '');
 }
 
-function extractHeaderInfo_(values) {
-  if (!values || values.length === 0) {
-    return null;
-  }
-
-  for (var i = 0; i < values.length; i++) {
-    var row = values[i];
-    if (!row || row.length === 0) {
-      continue;
-    }
-
-    var normalizedRow = row.map(function (cell) {
-      return String(cell || '').trim().toLowerCase();
-    });
-
-    var nonEmptyCount = normalizedRow.filter(function (cell) {
-      return cell.length > 0;
-    }).length;
-
-    if (nonEmptyCount === 0) {
-      continue;
-    }
-
-    var containsEmailHeader = normalizedRow.some(function (cell) {
-      return cell.indexOf('correo') !== -1 || cell.indexOf('email') !== -1;
-    });
-
-    if (containsEmailHeader) {
-      return {
-        headers: row,
-        firstDataRowIndex: i + 1
-      };
-    }
-  }
-
-  return null;
+function clearSession_() {
+  const props = PropertiesService.getUserProperties();
+  props.deleteProperty(SESSION_EMAIL_KEY);
+  props.deleteProperty(SESSION_NAME_KEY);
 }
 
 function findCredentialsByEmail_(email) {
@@ -405,134 +257,9 @@ function findCredentialsByEmail_(email) {
   return null;
 }
 
-function requireSessionEmail_() {
-  const session = getSession();
-  if (!session || !session.email) {
-    throw new Error('NO_SESSION');
-  }
-  return session.email;
-}
-
-function setSession_(email, nombre) {
-  const props = PropertiesService.getUserProperties();
-  props.setProperty(SESSION_EMAIL_KEY, email);
-  props.setProperty(SESSION_NAME_KEY, nombre || '');
-}
-
-function clearSession_() {
-  const props = PropertiesService.getUserProperties();
-  props.deleteProperty(SESSION_EMAIL_KEY);
-  props.deleteProperty(SESSION_NAME_KEY);
-}
-
-function startSessionForEmail_(normalizedEmail) {
-  const operacion = findOperacionByEmail_(normalizedEmail);
-  if (operacion) {
-    setSession_(operacion.email, operacion.nombre);
-    return {
-      success: true,
-      hasOperacion: true,
-      redirectUrl: buildPageUrl('index'),
-      user: {
-        nombre: operacion.nombre,
-        email: operacion.email
-      }
-    };
-  }
-
-  const credentials = findCredentialsByEmail_(normalizedEmail);
-  if (credentials) {
-    const nombre = credentials.nombre || '';
-    setSession_(credentials.email, nombre);
-    return {
-      success: true,
-      hasOperacion: false,
-      redirectUrl: buildPageUrl('index'),
-      user: {
-        nombre: nombre || 'Cliente Bayteca',
-        email: credentials.email
-      },
-      message: 'Hemos validado tu acceso, pero todavía no encontramos una operación asociada a tu correo.'
-    };
-  }
-
-  clearSession_();
-  return {
-    success: false,
-    message: 'No hemos encontrado operaciones asociadas a ese correo. Revisa la dirección e inténtalo de nuevo.'
-  };
-}
-
-function buildColumnIndex_(headers) {
-  var normalizedHeaders = headers.map(function (header) {
-    return String(header || '').trim().toLowerCase();
-  });
-
-  function findIndex(possibleNames, fallback, predicate) {
-    for (var i = 0; i < possibleNames.length; i++) {
-      var name = possibleNames[i];
-      var idx = normalizedHeaders.indexOf(name);
-      if (idx !== -1) {
-        return idx;
-      }
-    }
-
-    if (typeof predicate === 'function') {
-      for (var j = 0; j < normalizedHeaders.length; j++) {
-        if (predicate(normalizedHeaders[j])) {
-          return j;
-        }
-      }
-    }
-
-    return fallback;
-  }
-
-  return {
-    idOperacion: findIndex(['id', 'id operacion', 'id operación'], 0),
-    nombreCliente: findIndex(['nombre', 'nombre cliente', 'cliente'], 1),
-    gestor: findIndex(['gestor', 'asesor'], 2),
-    diasMismoEstado: findIndex(['dias mismo estado', 'días mismo estado'], 4),
-    dni: findIndex(['dni', 'documento'], 5),
-    precioVivienda: findIndex(['precio vivienda', 'precio', 'valor vivienda'], 6),
-    importeHipoteca: findIndex(['importe hipoteca', 'hipoteca'], 7),
-    estadoOperacion: findIndex(['estado operacion', 'estado operación', 'estado'], 8),
-    email: findIndex(
-      ['email', 'correo', 'correo electronico', 'correo electrónico'],
-      9,
-      function (header) {
-        return header.indexOf('correo') !== -1 || header.indexOf('email') !== -1;
-      }
-    ),
-    airtable: findIndex(['airtable', 'enlace airtable'], 10),
-    etapa: findIndex(['etapa', 'fase'], 11)
-  };
-}
-
 function normalizeEmail_(email) {
   if (!email) {
     return '';
   }
   return String(email).trim().toLowerCase();
-}
-
-function safeValue_(value) {
-  if (value === null || value === undefined) {
-    return '';
-  }
-  return value;
-}
-
-function buildErrorResponse_(error) {
-  var message = 'Ha ocurrido un error inesperado. Inténtalo de nuevo en unos minutos.';
-  if (error && error.message === 'NO_SESSION') {
-    message = 'Tu sesión ha expirado. Por favor, vuelve a iniciar sesión.';
-  }
-  if (error && error.message === 'NO_DATA_FOUND') {
-    message = 'No hemos encontrado información asociada a tu usuario.';
-  }
-  return {
-    success: false,
-    message: message
-  };
 }
