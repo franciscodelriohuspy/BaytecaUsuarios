@@ -88,16 +88,18 @@ function loginWithGoogle() {
     };
   }
 
-  const credentials = findCredentialsByEmail_(normalizedEmail);
-  if (!credentials) {
-    clearSession_();
-    return {
-      success: false,
-      message: 'Tu cuenta de Google no está autorizada para acceder. Inicia sesión con tu correo y contraseña o contacta con tu gestor.'
-    };
+  const sessionResult = startSessionForEmail_(normalizedEmail);
+  if (sessionResult && sessionResult.success) {
+    return sessionResult;
   }
 
-  return startSessionForEmail_(normalizedEmail);
+  clearSession_();
+  return {
+    success: false,
+    message: sessionResult && sessionResult.message
+      ? sessionResult.message
+      : 'Tu cuenta de Google no está autorizada para acceder. Inicia sesión con tu correo y contraseña o contacta con tu gestor.'
+  };
 }
 
 function logout() {
@@ -345,6 +347,7 @@ function startSessionForEmail_(normalizedEmail) {
     return {
       success: true,
       hasOperacion: true,
+      redirectUrl: buildPageUrl('index'),
       user: {
         nombre: operacion.nombre,
         email: operacion.email
@@ -359,6 +362,7 @@ function startSessionForEmail_(normalizedEmail) {
     return {
       success: true,
       hasOperacion: false,
+      redirectUrl: buildPageUrl('index'),
       user: {
         nombre: nombre || 'Cliente Bayteca',
         email: credentials.email
@@ -379,7 +383,7 @@ function buildColumnIndex_(headers) {
     return String(header || '').trim().toLowerCase();
   });
 
-  function findIndex(possibleNames, fallback) {
+  function findIndex(possibleNames, fallback, predicate) {
     for (var i = 0; i < possibleNames.length; i++) {
       var name = possibleNames[i];
       var idx = normalizedHeaders.indexOf(name);
@@ -387,6 +391,15 @@ function buildColumnIndex_(headers) {
         return idx;
       }
     }
+
+    if (typeof predicate === 'function') {
+      for (var j = 0; j < normalizedHeaders.length; j++) {
+        if (predicate(normalizedHeaders[j])) {
+          return j;
+        }
+      }
+    }
+
     return fallback;
   }
 
@@ -399,7 +412,13 @@ function buildColumnIndex_(headers) {
     precioVivienda: findIndex(['precio vivienda', 'precio', 'valor vivienda'], 6),
     importeHipoteca: findIndex(['importe hipoteca', 'hipoteca'], 7),
     estadoOperacion: findIndex(['estado operacion', 'estado operación', 'estado'], 8),
-    email: findIndex(['email', 'correo', 'correo electronico', 'correo electrónico'], 9),
+    email: findIndex(
+      ['email', 'correo', 'correo electronico', 'correo electrónico'],
+      9,
+      function (header) {
+        return header.indexOf('correo') !== -1 || header.indexOf('email') !== -1;
+      }
+    ),
     airtable: findIndex(['airtable', 'enlace airtable'], 10),
     etapa: findIndex(['etapa', 'fase'], 11)
   };
