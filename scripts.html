@@ -418,9 +418,19 @@
     }
 
     function navigateTo(page) {
+      const targetWindow = window.top || window;
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function (url) {
+            targetWindow.location.href = url;
+          })
+          .buildPageUrl(page);
+        return;
+      }
+
       const url = new URL(window.location.href);
       url.searchParams.set('page', page);
-      window.location.href = url.toString();
+      targetWindow.location.href = url.toString();
     }
   })();
 </script>
