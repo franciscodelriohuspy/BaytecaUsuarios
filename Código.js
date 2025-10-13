@@ -1,5 +1,4 @@
 const OPERACIONES_SPREADSHEET_ID = '1rwCBi1BRyz6wd7528jZv_X1hXY-PyLSm4rWiUA0Nhbo';
-const OPERACIONES_EMAIL_COLUMN_INDEX = 9; // Columna J
 const CREDENCIALES_SPREADSHEET_ID = '1kNiGw6zVxsvtWi1YHWo3zC7qN12t-bwJnao45_ubhKE';
 const SESSION_EMAIL_KEY = 'BAYTECA_ACTIVE_EMAIL';
 const SESSION_NAME_KEY = 'BAYTECA_ACTIVE_NAME';
@@ -260,15 +259,35 @@ function findOperacionByEmail_(email) {
     return null;
   }
 
-  const sheet = SpreadsheetApp.openById(OPERACIONES_SPREADSHEET_ID).getSheets()[0];
-  const data = sheet.getDataRange().getValues();
-  if (!data || data.length < 2) {
+  const sheet = getOperacionesSheet_();
+  if (!sheet) {
     return null;
   }
 
-  const headers = data.shift();
+  const rawValues = sheet.getDataRange().getValues();
+  if (!rawValues || rawValues.length === 0) {
+    return null;
+  }
+
+  const headerInfo = extractHeaderInfo_(rawValues) || {
+    headers: rawValues[0],
+    firstDataRowIndex: Math.min(1, rawValues.length)
+  };
+
+  if (!headerInfo || !headerInfo.headers || headerInfo.headers.length === 0) {
+    return null;
+  }
+
+  const headers = headerInfo.headers.slice();
+  const data = rawValues.slice(headerInfo.firstDataRowIndex);
+  if (data.length === 0) {
+    return null;
+  }
+
   const columnIndex = buildColumnIndex_(headers);
-  const emailColumnIndex = OPERACIONES_EMAIL_COLUMN_INDEX;
+  const emailColumnIndex = typeof columnIndex.email === 'number'
+    ? columnIndex.email
+    : 9; // Fallback a la columna J si no se identifica por el encabezado
 
   for (var i = 0; i < data.length; i++) {
     var row = data[i];
@@ -293,6 +312,66 @@ function findOperacionByEmail_(email) {
       };
     }
   }
+  return null;
+}
+
+function getOperacionesSheet_() {
+  const spreadsheet = SpreadsheetApp.openById(OPERACIONES_SPREADSHEET_ID);
+  const sheets = spreadsheet.getSheets();
+  if (!sheets || sheets.length === 0) {
+    return null;
+  }
+
+  for (var i = 0; i < sheets.length; i++) {
+    var sheet = sheets[i];
+    var sampleRowCount = Math.min(10, Math.max(sheet.getLastRow(), 1));
+    var sampleColCount = Math.max(sheet.getLastColumn(), 1);
+    var sampleRange = sheet.getRange(1, 1, sampleRowCount, sampleColCount);
+    var sampleValues = sampleRange.getValues();
+    var headerInfo = extractHeaderInfo_(sampleValues);
+    if (headerInfo) {
+      return sheet;
+    }
+  }
+
+  return sheets[0];
+}
+
+function extractHeaderInfo_(values) {
+  if (!values || values.length === 0) {
+    return null;
+  }
+
+  for (var i = 0; i < values.length; i++) {
+    var row = values[i];
+    if (!row || row.length === 0) {
+      continue;
+    }
+
+    var normalizedRow = row.map(function (cell) {
+      return String(cell || '').trim().toLowerCase();
+    });
+
+    var nonEmptyCount = normalizedRow.filter(function (cell) {
+      return cell.length > 0;
+    }).length;
+
+    if (nonEmptyCount === 0) {
+      continue;
+    }
+
+    var containsEmailHeader = normalizedRow.some(function (cell) {
+      return cell.indexOf('correo') !== -1 || cell.indexOf('email') !== -1;
+    });
+
+    if (containsEmailHeader) {
+      return {
+        headers: row,
+        firstDataRowIndex: i + 1
+      };
+    }
+  }
+
   return null;
 }
 
