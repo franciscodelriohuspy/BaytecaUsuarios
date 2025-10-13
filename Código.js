@@ -21,6 +21,16 @@ function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
+function buildPageUrl(page) {
+  const baseUrl = ScriptApp.getService().getUrl();
+  if (!page) {
+    return baseUrl;
+  }
+  const separator = baseUrl.indexOf('?') === -1 ? '?' : '&';
+  const encodedPage = encodeURIComponent(page);
+  return baseUrl + separator + 'page=' + encodedPage;
+}
+
 function determineInitialPage_(session, requestedPage) {
   if (requestedPage) {
     return requestedPage;
