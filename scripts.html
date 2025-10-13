@@ -5,6 +5,8 @@
       page: document.body.dataset.page
     };
 
+    const EMPTY_FIELD = '\u00A0';
+
     const STATIC_SEGUROS_DATA = {
       seguros: [
         {
@@ -260,10 +262,10 @@
       const summaryDias = document.getElementById('summaryDias');
       const summaryId = document.getElementById('summaryId');
 
-      if (summaryEtapa) summaryEtapa.textContent = '—';
-      if (summaryGestor) summaryGestor.textContent = 'Tu gestor asignado aparecerá aquí';
-      if (summaryDias) summaryDias.textContent = 'Días en el mismo estado: –';
-      if (summaryId) summaryId.textContent = 'ID de operación: –';
+      if (summaryEtapa) summaryEtapa.textContent = EMPTY_FIELD;
+      if (summaryGestor) summaryGestor.textContent = 'Gestor asignado: ' + EMPTY_FIELD;
+      if (summaryDias) summaryDias.textContent = 'Días en el mismo estado: ' + EMPTY_FIELD;
+      if (summaryId) summaryId.textContent = 'ID de operación: ' + EMPTY_FIELD;
     }
 
     function loadEstado() {
@@ -274,21 +276,21 @@
       const infoBasica = document.getElementById('infoBasica');
       if (infoBasica) {
         infoBasica.innerHTML = '';
-        appendMeta(infoBasica, 'ID de operación', '—');
-        appendMeta(infoBasica, 'Gestor', '—');
-        appendMeta(infoBasica, 'Estado', '—');
-        appendMeta(infoBasica, 'Etapa actual', '—');
-        appendMeta(infoBasica, 'Días en el mismo estado', '—');
+        appendMeta(infoBasica, 'ID de operación', EMPTY_FIELD);
+        appendMeta(infoBasica, 'Gestor', EMPTY_FIELD);
+        appendMeta(infoBasica, 'Estado', EMPTY_FIELD);
+        appendMeta(infoBasica, 'Etapa actual', EMPTY_FIELD);
+        appendMeta(infoBasica, 'Días en el mismo estado', EMPTY_FIELD);
       }
 
       const descripcion = document.getElementById('estadoDescripcion');
       if (descripcion) {
-        descripcion.textContent = 'Aquí verás el detalle de tu solicitud y los siguientes pasos en cuanto estén disponibles.';
+        descripcion.textContent = EMPTY_FIELD;
       }
 
       const meta = document.getElementById('estadoMeta');
       if (meta) {
-        meta.textContent = 'Pronto mostraremos la evolución de tu operación en este panel.';
+        meta.textContent = EMPTY_FIELD;
       }
 
       const steps = document.querySelectorAll('.progress-bar .step');
@@ -319,19 +321,14 @@
 
       const grid = document.createElement('div');
       grid.className = 'datos-grid';
-      grid.appendChild(createDatoItem('ID de la operación', '—'));
-      grid.appendChild(createDatoItem('Nombre del cliente', state.session && state.session.nombre ? state.session.nombre : '—'));
-      grid.appendChild(createDatoItem('Gestor asignado', '—'));
-      grid.appendChild(createDatoItem('Días en el mismo estado', '—'));
-      grid.appendChild(createDatoItem('DNI', '—'));
-      grid.appendChild(createDatoItem('Precio de la vivienda', '—'));
-      grid.appendChild(createDatoItem('Importe de hipoteca', '—'));
+      grid.appendChild(createDatoItem('ID de la operación', EMPTY_FIELD));
+      grid.appendChild(createDatoItem('Nombre del cliente', EMPTY_FIELD));
+      grid.appendChild(createDatoItem('Gestor asignado', EMPTY_FIELD));
+      grid.appendChild(createDatoItem('Días en el mismo estado', EMPTY_FIELD));
+      grid.appendChild(createDatoItem('DNI', EMPTY_FIELD));
+      grid.appendChild(createDatoItem('Precio de la vivienda', EMPTY_FIELD));
+      grid.appendChild(createDatoItem('Importe de hipoteca', EMPTY_FIELD));
       container.appendChild(grid);
-
-      const helperText = document.createElement('p');
-      helperText.className = 'empty-state';
-      helperText.textContent = 'Muy pronto podrás consultar y actualizar tu información desde este mismo panel.';
-      container.appendChild(helperText);
 
       if (airtableCard) {
         airtableCard.hidden = true;
