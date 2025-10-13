@@ -418,7 +418,6 @@ function buildColumnIndex_(headers) {
     precioVivienda: findIndex(['precio vivienda', 'precio', 'valor vivienda'], 6),
     importeHipoteca: findIndex(['importe hipoteca', 'hipoteca'], 7),
     estadoOperacion: findIndex(['estado operacion', 'estado operación', 'estado'], 8),
-    email: OPERACIONES_EMAIL_COLUMN_INDEX,
     airtable: findIndex(['airtable', 'enlace airtable'], 10),
     etapa: findIndex(['etapa', 'fase'], 11)
   };
