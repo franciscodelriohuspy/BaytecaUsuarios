@@ -131,7 +131,7 @@
           var redirectDelay = response.hasOperacion === false ? 1500 : 500;
           var redirectUrl = response.redirectUrl;
           setTimeout(function () {
-            var targetWindow = window.top || window;
+            var targetWindow = getNavigationWindow_();
             if (redirectUrl) {
               targetWindow.location.href = redirectUrl;
               return;
@@ -409,7 +409,7 @@
     }
 
     function navigateTo(page) {
-      const targetWindow = window.top || window;
+      const targetWindow = getNavigationWindow_();
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
           .withSuccessHandler(function (url) {
@@ -422,6 +422,18 @@
       const url = new URL(window.location.href);
       url.searchParams.set('page', page);
       targetWindow.location.href = url.toString();
+    }
+
+    function getNavigationWindow_() {
+      try {
+        if (window.top && window.top !== window) {
+          void window.top.location.href;
+          return window.top;
+        }
+      } catch (error) {
+        // Ignoramos accesos no permitidos al contexto superior y usamos la ventana actual.
+      }
+      return window;
     }
   })();
 </script>
